@@ -55,14 +55,17 @@
 
                     <!-- Sélection rapide lecteur -->
                     <ComboBox
+                        x:Name="DriveComboBox"
                         Grid.Column="0"
-                        Width="100"
+                        Width="110"
                         Header="Lecteur"
+                        PlaceholderText="Lecteur..."
                         ItemsSource="{x:Bind ViewModel.AvailableDrives}"
-                        SelectedItem="{x:Bind ViewModel.SelectedPath, Mode=TwoWay}" />
+                        SelectionChanged="DriveComboBox_SelectionChanged" />
 
                     <!-- Chemin personnalisé -->
                     <TextBox
+                        x:Name="PathTextBox"
                         Grid.Column="1"
                         Header="Dossier ou lecteur cible"
                         PlaceholderText="ex: C:\ ou C:\Users"

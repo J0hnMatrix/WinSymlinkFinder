@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using WinSymlinkFinder.Models;
+using WinSymlinkFinder.Services;
 using WinSymlinkFinder.ViewModels;
 
 namespace WinSymlinkFinder.Pages;
@@ -16,6 +17,20 @@ public sealed partial class HomePage : Page
         InitializeComponent();
         ViewModel = new ScannerViewModel();
         DataContext = ViewModel;
+
+        if (ViewModel.AvailableDrives.Contains(ViewModel.SelectedPath))
+        {
+            DriveComboBox.SelectedItem = ViewModel.SelectedPath;
+        }
+    }
+
+    private void DriveComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (DriveComboBox.SelectedItem is string drive && !string.IsNullOrEmpty(drive))
+        {
+            ViewModel.SelectedPath = drive;
+            AppLogService.Instance.LogInfo($"Lecteur sélectionné via ComboBox : '{drive}'");
+        }
     }
 
     private void BrowseFolder_Click(object sender, RoutedEventArgs e)
@@ -25,13 +40,16 @@ public sealed partial class HomePage : Page
             string? folder = Helpers.NativeDialogHelper.PickFolder(App.MainWindowHandle, ViewModel.SelectedPath);
             if (!string.IsNullOrEmpty(folder))
             {
+                DriveComboBox.SelectedItem = null;
                 ViewModel.SelectedPath = folder;
+                AppLogService.Instance.LogInfo($"Chemin de scan mis à jour via Parcourir : '{folder}'");
             }
         }
         catch (Exception ex)
         {
             ViewModel.StatusInfoBarMessage = $"Erreur lors de la sélection du dossier : {ex.Message}";
             ViewModel.IsStatusInfoBarOpen = true;
+            AppLogService.Instance.LogError("Erreur dans BrowseFolder_Click", ex);
         }
     }
 
