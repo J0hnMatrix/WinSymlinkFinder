@@ -1,12 +1,15 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
+using WinSymlinkFinder.Services;
 
 namespace WinSymlinkFinder.Helpers;
 
 /// <summary>
-/// Helper natif Win32 Shell pour l'ouverture des boîtes de dialogue de sélection de dossiers et fichiers.
-/// Fonctionne de manière 100% fiable en mode décompressé (unpackaged WinUI 3) sans dépendance WinRT broker.
+/// Helper natif Win32 pour l'ouverture des boîtes de dialogue de sélection de dossiers et fichiers.
+/// Exécute les dialogues dans un thread STA dédié avec multi-tier fallback (IFileOpenDialog -> SHBrowseForFolder).
 /// </summary>
 public static class NativeDialogHelper
 {
@@ -161,10 +164,91 @@ public static class NativeDialogHelper
         ref Guid riid,
         [MarshalAs(UnmanagedType.Interface)] out IShellItem ppv);
 
+    // Fallback SHBrowseForFolder
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct BROWSEINFO
+    {
+        public IntPtr hwndOwner;
+        public IntPtr pidlRoot;
+        public IntPtr pszDisplayName;
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string lpszTitle;
+        public uint ulFlags;
+        public IntPtr lpfn;
+        public IntPtr lParam;
+        public int iImage;
+    }
+
+    private const uint BIF_RETURNONLYFSDIRS = 0x00000001;
+    private const uint BIF_NEWDIALOGSTYLE = 0x00000040;
+    private const uint BIF_USENEWUI = 0x00000040 | 0x00000010;
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr SHBrowseForFolder(ref BROWSEINFO lpbi);
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern bool SHGetPathFromIDList(IntPtr pidl, StringBuilder pszPath);
+
+    [DllImport("ole32.dll")]
+    private static extern void CoTaskMemFree(IntPtr pv);
+
     /// <summary>
-    /// Ouvre la boîte de dialogue native Windows pour choisir un dossier.
+    /// Ouvre la boîte de dialogue de sélection de dossier dans un thread STA dédié.
+    /// Tente d'abord IFileOpenDialog, puis bascule sur SHBrowseForFolder en cas de problème.
     /// </summary>
     public static string? PickFolder(IntPtr parentHwnd, string? initialFolder = null, string? title = "Sélectionner un dossier")
+    {
+        string? result = null;
+        Exception? caughtEx = null;
+
+        AppLogService.Instance.LogInfo($"Demande de sélection de dossier. parentHwnd=0x{parentHwnd:X}, initialFolder='{initialFolder}'");
+
+        var staThread = new Thread(() =>
+        {
+            try
+            {
+                // Tier 1 : IFileOpenDialog moderne
+                result = ShowFileOpenDialog(parentHwnd, initialFolder, title);
+                if (result != null)
+                {
+                    AppLogService.Instance.LogInfo($"Dossier sélectionné via IFileOpenDialog : '{result}'");
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                caughtEx = ex;
+                AppLogService.Instance.LogWarning($"Échec IFileOpenDialog : {ex.Message}. Tentative via SHBrowseForFolder...");
+            }
+
+            // Si résultat null et pas d'annulation claire, ou exception : Tier 2 SHBrowseForFolder
+            try
+            {
+                result = ShowBrowseForFolderFallback(parentHwnd, title);
+                if (result != null)
+                {
+                    AppLogService.Instance.LogInfo($"Dossier sélectionné via SHBrowseForFolder : '{result}'");
+                }
+                else
+                {
+                    AppLogService.Instance.LogInfo("Sélection de dossier annulée par l'utilisateur.");
+                }
+            }
+            catch (Exception fallbackEx)
+            {
+                AppLogService.Instance.LogError("Échec total des boîtes de dialogue de sélection de dossier.", fallbackEx);
+            }
+        });
+
+        staThread.SetApartmentState(ApartmentState.STA);
+        staThread.IsBackground = true;
+        staThread.Start();
+        staThread.Join();
+
+        return result;
+    }
+
+    private static string? ShowFileOpenDialog(IntPtr parentHwnd, string? initialFolder, string? title)
     {
         var dialog = (IFileOpenDialog)new FileOpenDialogRCW();
         try
@@ -187,11 +271,17 @@ public static class NativeDialogHelper
                 }
                 catch
                 {
-                    // Ignorer les erreurs d'initialisation du dossier par défaut
                 }
             }
 
+            // Tente d'abord avec parentHwnd, ou IntPtr.Zero si parentHwnd invalide
             int hr = dialog.Show(parentHwnd);
+            if (hr != 0 && parentHwnd != IntPtr.Zero)
+            {
+                // Si l'appel a échoué avec le handle parent (ex: restriction WinUI), réessaie sans parent
+                hr = dialog.Show(IntPtr.Zero);
+            }
+
             if (hr == 0) // S_OK
             {
                 dialog.GetResult(out IShellItem item);
@@ -209,51 +299,112 @@ public static class NativeDialogHelper
         }
     }
 
+    private static string? ShowBrowseForFolderFallback(IntPtr parentHwnd, string? title)
+    {
+        var bi = new BROWSEINFO
+        {
+            hwndOwner = parentHwnd,
+            lpszTitle = title ?? "Sélectionner un dossier",
+            ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE
+        };
+
+        IntPtr pidl = SHBrowseForFolder(ref bi);
+        if (pidl == IntPtr.Zero && parentHwnd != IntPtr.Zero)
+        {
+            // Réessaie sans parent
+            bi.hwndOwner = IntPtr.Zero;
+            pidl = SHBrowseForFolder(ref bi);
+        }
+
+        if (pidl != IntPtr.Zero)
+        {
+            try
+            {
+                var sb = new StringBuilder(1024);
+                if (SHGetPathFromIDList(pidl, sb))
+                {
+                    return sb.ToString();
+                }
+            }
+            finally
+            {
+                CoTaskMemFree(pidl);
+            }
+        }
+        return null;
+    }
+
     /// <summary>
-    /// Ouvre la boîte de dialogue native Windows pour enregistrer un fichier.
+    /// Ouvre la boîte de dialogue native pour enregistrer un fichier dans un thread STA dédié.
     /// </summary>
     public static string? PickSaveFile(IntPtr parentHwnd, string extension, string filterName, string defaultFileName = "")
     {
-        var dialog = (IFileSaveDialog)new FileSaveDialogRCW();
-        IntPtr filterSpecPtr = IntPtr.Zero;
-        try
+        string? result = null;
+        AppLogService.Instance.LogInfo($"Demande de sauvegarde de fichier. extension='{extension}', defaultFileName='{defaultFileName}'");
+
+        var staThread = new Thread(() =>
         {
-            dialog.SetOptions(FOS.FOS_OVERWRITEPROMPT | FOS.FOS_FORCEFILESYSTEM | FOS.FOS_PATHMUSTEXIST);
-            dialog.SetDefaultExtension(extension.TrimStart('.'));
-            if (!string.IsNullOrEmpty(defaultFileName))
+            var dialog = (IFileSaveDialog)new FileSaveDialogRCW();
+            IntPtr filterSpecPtr = IntPtr.Zero;
+            try
             {
-                dialog.SetFileName(defaultFileName);
-            }
-
-            var filter = new COMDLG_FILTERSPEC
-            {
-                pszName = $"{filterName} (*{extension})",
-                pszSpec = $"*{extension}"
-            };
-
-            filterSpecPtr = Marshal.AllocHGlobal(Marshal.SizeOf(filter));
-            Marshal.StructureToPtr(filter, filterSpecPtr, false);
-            dialog.SetFileTypes(1, filterSpecPtr);
-
-            int hr = dialog.Show(parentHwnd);
-            if (hr == 0)
-            {
-                dialog.GetResult(out IShellItem item);
-                if (item != null)
+                dialog.SetOptions(FOS.FOS_OVERWRITEPROMPT | FOS.FOS_FORCEFILESYSTEM | FOS.FOS_PATHMUSTEXIST);
+                dialog.SetDefaultExtension(extension.TrimStart('.'));
+                if (!string.IsNullOrEmpty(defaultFileName))
                 {
-                    item.GetDisplayName(SIGDN.SIGDN_FILESYSPATH, out string path);
-                    return path;
+                    dialog.SetFileName(defaultFileName);
+                }
+
+                var filter = new COMDLG_FILTERSPEC
+                {
+                    pszName = $"{filterName} (*{extension})",
+                    pszSpec = $"*{extension}"
+                };
+
+                filterSpecPtr = Marshal.AllocHGlobal(Marshal.SizeOf(filter));
+                Marshal.StructureToPtr(filter, filterSpecPtr, false);
+                dialog.SetFileTypes(1, filterSpecPtr);
+
+                int hr = dialog.Show(parentHwnd);
+                if (hr != 0 && parentHwnd != IntPtr.Zero)
+                {
+                    hr = dialog.Show(IntPtr.Zero);
+                }
+
+                if (hr == 0)
+                {
+                    dialog.GetResult(out IShellItem item);
+                    if (item != null)
+                    {
+                        item.GetDisplayName(SIGDN.SIGDN_FILESYSPATH, out string path);
+                        result = path;
+                        AppLogService.Instance.LogInfo($"Fichier de sauvegarde sélectionné : '{result}'");
+                    }
+                }
+                else
+                {
+                    AppLogService.Instance.LogInfo("Sauvegarde de fichier annulée.");
                 }
             }
-            return null;
-        }
-        finally
-        {
-            if (filterSpecPtr != IntPtr.Zero)
+            catch (Exception ex)
             {
-                Marshal.FreeHGlobal(filterSpecPtr);
+                AppLogService.Instance.LogError("Erreur lors de la boîte de dialogue d'enregistrement", ex);
             }
-            Marshal.ReleaseComObject(dialog);
-        }
+            finally
+            {
+                if (filterSpecPtr != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(filterSpecPtr);
+                }
+                Marshal.ReleaseComObject(dialog);
+            }
+        });
+
+        staThread.SetApartmentState(ApartmentState.STA);
+        staThread.IsBackground = true;
+        staThread.Start();
+        staThread.Join();
+
+        return result;
     }
 }

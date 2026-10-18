@@ -47,13 +47,27 @@
                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                 BorderThickness="1"
                 CornerRadius="8">
-                <StackPanel Spacing="8">
+                <StackPanel Spacing="10">
                     <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="Informations de version" />
-                    <TextBlock Style="{StaticResource BodyTextBlockStyle}">
-                        <Bold>WinSymlinkFinder</Bold> version 1.0.0<LineBreak />
-                        Cadre d'application : Windows App SDK / WinUI 3<LineBreak />
-                        Runtime : .NET 8.0 (x64 / ARM64)
-                    </TextBlock>
+                    
+                    <Button
+                        x:Name="VersionButton"
+                        Click="VersionButton_Click"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Padding="0"
+                        HorizontalAlignment="Left">
+                        <TextBlock Style="{StaticResource BodyTextBlockStyle}">
+                            <Bold>WinSymlinkFinder</Bold> version 1.2.0<LineBreak />
+                            Cadre d'application : Windows App SDK / WinUI 3<LineBreak />
+                            Runtime : .NET 8.0 (x64 / ARM64)
+                        </TextBlock>
+                    </Button>
+
+                    <InfoBar
+                        x:Name="DebugTipInfoBar"
+                        IsOpen="False"
+                        Severity="Informational" />
                 </StackPanel>
             </Border>
         </StackPanel>

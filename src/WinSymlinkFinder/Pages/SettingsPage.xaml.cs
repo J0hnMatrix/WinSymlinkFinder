@@ -43,4 +43,41 @@ public sealed partial class SettingsPage : Page
             };
         }
     }
+
+    private int _versionClickCount;
+    private static DebugWindow? _debugWindowInstance;
+
+    private void VersionButton_Click(object sender, RoutedEventArgs e)
+    {
+        _versionClickCount++;
+
+        if (_versionClickCount == 7)
+        {
+            _versionClickCount = 0;
+            DebugTipInfoBar.Title = "Mode Développeur Déverrouillé !";
+            DebugTipInfoBar.Message = "Ouverture de la fenêtre de diagnostic et du journal d'événements en direct.";
+            DebugTipInfoBar.Severity = InfoBarSeverity.Success;
+            DebugTipInfoBar.IsOpen = true;
+
+            OpenDebugWindow();
+        }
+        else if (_versionClickCount >= 4)
+        {
+            int remaining = 7 - _versionClickCount;
+            DebugTipInfoBar.Title = "Mode Développeur";
+            DebugTipInfoBar.Message = $"Encore {remaining} clic{(remaining > 1 ? "s" : "")} pour ouvrir le journal de débogage...";
+            DebugTipInfoBar.Severity = InfoBarSeverity.Informational;
+            DebugTipInfoBar.IsOpen = true;
+        }
+    }
+
+    public static void OpenDebugWindow()
+    {
+        if (_debugWindowInstance == null)
+        {
+            _debugWindowInstance = new DebugWindow();
+            _debugWindowInstance.Closed += (s, e) => _debugWindowInstance = null;
+        }
+        _debugWindowInstance.Activate();
+    }
 }

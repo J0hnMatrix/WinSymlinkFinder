@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Window
+    x:Class="WinSymlinkFinder.DebugWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:services="using:WinSymlinkFinder.Services"
+    Title="Journal de Débogage - WinSymlinkFinder (Mode Développeur)"
+    mc:Ignorable="d">
+
+    <Window.SystemBackdrop>
+        <MicaBackdrop />
+    </Window.SystemBackdrop>
+
+    <Grid RowSpacing="8" Padding="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Titre et statut -->
+        <StackPanel Grid.Row="0" Spacing="4">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <FontIcon Glyph="&#xEBE8;" Foreground="{ThemeResource SystemFillColorCautionBrush}" />
+                <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="Mode Diagnostic &amp; Débogage Système" />
+            </StackPanel>
+            <TextBlock
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{StaticResource CaptionTextBlockStyle}"
+                Text="Fenêtre de surveillance en direct des opérations, événements de dialogue et erreurs d'accès." />
+        </StackPanel>
+
+        <!-- Barre d'actions -->
+        <Border
+            Grid.Row="1"
+            Padding="8"
+            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="6">
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBox
+                    Grid.Column="0"
+                    x:Name="SearchBox"
+                    PlaceholderText="Filtrer les messages du journal..."
+                    TextChanged="SearchBox_TextChanged" />
+
+                <Button Grid.Column="1" Click="CopyAll_Click" ToolTipService.ToolTip="Copier tous les logs">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE8C8;" FontSize="14" />
+                        <TextBlock Text="Copier tout" />
+                    </StackPanel>
+                </Button>
+
+                <Button Grid.Column="2" Click="Clear_Click" ToolTipService.ToolTip="Effacer l'affichage">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE74D;" FontSize="14" />
+                        <TextBlock Text="Effacer" />
+                    </StackPanel>
+                </Button>
+
+                <Button Grid.Column="3" Click="OpenLogFolder_Click" ToolTipService.ToolTip="Ouvrir le dossier contenant le fichier log">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xED25;" FontSize="14" />
+                        <TextBlock Text="Dossier des logs" />
+                    </StackPanel>
+                </Button>
+
+                <CheckBox
+                    Grid.Column="4"
+                    x:Name="AutoScrollCheckBox"
+                    Content="Auto-scroll"
+                    IsChecked="True"
+                    VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+
+        <!-- Liste des logs -->
+        <Border
+            Grid.Row="2"
+            Background="{ThemeResource LayerFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="6">
+            <ListView
+                x:Name="LogListView"
+                Padding="6"
+                HorizontalContentAlignment="Stretch"
+                SelectionMode="None">
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="services:LogEntry">
+                        <Grid Padding="4,2" ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <!-- Horodatage -->
+                            <TextBlock
+                                Grid.Column="0"
+                                FontFamily="Consolas, Cascadia Code, Courier New"
+                                FontSize="12"
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Text="{x:Bind FormattedTimestamp}" />
+
+                            <!-- Badge de niveau -->
+                            <Border
+                                Grid.Column="1"
+                                Padding="4,1"
+                                CornerRadius="3"
+                                Background="{ThemeResource SubtleFillColorSecondaryBrush}">
+                                <TextBlock
+                                    FontFamily="Consolas, Cascadia Code, Courier New"
+                                    FontSize="11"
+                                    FontWeight="Bold"
+                                    Text="{x:Bind Level}" />
+                            </Border>
+
+                            <!-- Message et détails -->
+                            <TextBlock
+                                Grid.Column="2"
+                                FontFamily="Consolas, Cascadia Code, Courier New"
+                                FontSize="12"
+                                TextWrapping="Wrap"
+                                Text="{x:Bind FormattedText}" />
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Border>
+
+        <!-- Emplacement du fichier log -->
+        <TextBlock
+            Grid.Row="3"
+            x:Name="LogPathTextBlock"
+            Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+            Style="{StaticResource CaptionTextBlockStyle}"
+            TextTrimming="CharacterEllipsis" />
+    </Grid>
+</Window>

@@ -247,14 +247,17 @@ public sealed partial class ScannerViewModel : ObservableObject
             }, _scanCts.Token);
 
             CurrentDirectoryStatus = $"Analyse terminée avec succès : {LinksFoundCount} liens trouvés ({ScannedItemsCount:N0} éléments examinés).";
+            AppLogService.Instance.LogInfo($"Scan terminé avec succès : {LinksFoundCount} liens trouvés sur {ScannedItemsCount:N0} éléments examinés ({ErrorsCount} erreurs d'accès).");
         }
         catch (OperationCanceledException)
         {
             CurrentDirectoryStatus = $"Analyse interrompue par l'utilisateur. {LinksFoundCount} liens trouvés.";
+            AppLogService.Instance.LogWarning($"Scan interrompu par l'utilisateur. {LinksFoundCount} liens trouvés.");
         }
         catch (Exception ex)
         {
             CurrentDirectoryStatus = $"Erreur lors de l'analyse : {ex.Message}";
+            AppLogService.Instance.LogError($"Erreur critique durant le scan de '{SelectedPath}'", ex);
         }
         finally
         {

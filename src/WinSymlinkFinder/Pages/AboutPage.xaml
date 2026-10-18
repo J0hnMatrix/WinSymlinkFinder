@@ -11,7 +11,12 @@
         <StackPanel HorizontalAlignment="Stretch" Spacing="16">
             <!-- En-tête -->
             <StackPanel Spacing="6">
-                <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="À propos de WinSymlinkFinder" />
+                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="À propos de WinSymlinkFinder" />
+                    <Border Padding="6,2" Background="{ThemeResource SubtleFillColorSecondaryBrush}" CornerRadius="4" VerticalAlignment="Center">
+                        <TextBlock Text="v1.2.0" FontSize="12" FontWeight="SemiBold" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                    </Border>
+                </StackPanel>
                 <TextBlock
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     Style="{StaticResource BodyTextBlockStyle}"
