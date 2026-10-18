@@ -4,16 +4,58 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:local="using:WinSymlinkFinder.Pages"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid Padding="24,16,24,16" RowSpacing="24">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-        <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="Settings" />
-        <TextBlock Grid.Row="1" Text="This is the Settings page" />
-    </Grid>
+    <ScrollViewer Padding="24,16,24,24">
+        <StackPanel MaxWidth="800" HorizontalAlignment="Left" Spacing="24">
+            <!-- En-tête -->
+            <StackPanel Spacing="4">
+                <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="Paramètres" />
+                <TextBlock
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource BodyTextBlockStyle}"
+                    Text="Personnalisez l'apparence et les options de l'application." />
+            </StackPanel>
+
+            <!-- Apparence -->
+            <Border
+                Padding="16"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+                <StackPanel Spacing="12">
+                    <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="Apparence" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="Sélectionnez le thème d'affichage de l'application." />
+
+                    <RadioButtons x:Name="ThemeRadioButtons" SelectionChanged="ThemeRadioButtons_SelectionChanged">
+                        <RadioButton Content="Thème clair" Tag="Light" />
+                        <RadioButton Content="Thème sombre" Tag="Dark" />
+                        <RadioButton Content="Paramètre Windows par défaut" IsChecked="True" Tag="Default" />
+                    </RadioButtons>
+                </StackPanel>
+            </Border>
+
+            <!-- À propos de l'application -->
+            <Border
+                Padding="16"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+                <StackPanel Spacing="8">
+                    <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="Informations de version" />
+                    <TextBlock Style="{StaticResource BodyTextBlockStyle}">
+                        <Bold>WinSymlinkFinder</Bold> version 1.0.0<LineBreak />
+                        Cadre d'application : Windows App SDK / WinUI 3<LineBreak />
+                        Runtime : .NET 8.0 (x64 / ARM64)
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
 </Page>

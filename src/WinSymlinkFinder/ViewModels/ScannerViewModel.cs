@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
 using Windows.ApplicationModel.DataTransfer;
 using WinSymlinkFinder.Models;
 using WinSymlinkFinder.Services;
@@ -33,17 +34,22 @@ public sealed partial class ScannerViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanStartScan))]
+    [NotifyPropertyChangedFor(nameof(ScanningProgressBarVisibility))]
     private bool _isScanning;
 
     public bool CanStartScan => !IsScanning && !string.IsNullOrWhiteSpace(SelectedPath);
+    public Visibility ScanningProgressBarVisibility => IsScanning ? Visibility.Visible : Visibility.Collapsed;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ScannedItemsCountText))]
     private long _scannedItemsCount;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LinksFoundCountText))]
     private int _linksFoundCount;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ErrorsCountText))]
     private int _errorsCount;
 
     [ObservableProperty]
@@ -54,16 +60,29 @@ public sealed partial class ScannerViewModel : ObservableObject
 
     // Cartes de statistiques
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SymlinkFilesCountText))]
     private int _symlinkFilesCount;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SymlinkDirsCountText))]
     private int _symlinkDirsCount;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(JunctionsCountText))]
     private int _junctionsCount;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(BrokenLinksCountText))]
     private int _brokenLinksCount;
+
+    public string ScannedItemsCountText => ScannedItemsCount.ToString("N0");
+    public string LinksFoundCountText => LinksFoundCount.ToString("N0");
+    public string ErrorsCountText => ErrorsCount.ToString("N0");
+    public string SymlinkFilesCountText => SymlinkFilesCount.ToString("N0");
+    public string SymlinkDirsCountText => SymlinkDirsCount.ToString("N0");
+    public string JunctionsCountText => JunctionsCount.ToString("N0");
+    public string BrokenLinksCountText => BrokenLinksCount.ToString("N0");
+    public string FilteredLinksCountText => FilteredLinks.Count.ToString("N0");
 
     // Filtres
     [ObservableProperty]
@@ -91,6 +110,8 @@ public sealed partial class ScannerViewModel : ObservableObject
     private bool _isStatusInfoBarOpen;
 
     public ObservableCollection<LinkItem> FilteredLinks { get; } = [];
+
+    public Visibility EmptyStateVisibility => FilteredLinks.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
     public ScannerViewModel() : this(new NtfsLinkScanner(), new ExportService())
     {
@@ -218,6 +239,8 @@ public sealed partial class ScannerViewModel : ObservableObject
                         if (MatchesFilter(link))
                         {
                             FilteredLinks.Add(link);
+                            OnPropertyChanged(nameof(EmptyStateVisibility));
+                            OnPropertyChanged(nameof(FilteredLinksCountText));
                         }
                     });
                 }
@@ -259,6 +282,8 @@ public sealed partial class ScannerViewModel : ObservableObject
         if (IsScanning) return;
         _allLinks.Clear();
         FilteredLinks.Clear();
+        OnPropertyChanged(nameof(EmptyStateVisibility));
+        OnPropertyChanged(nameof(FilteredLinksCountText));
         ScannedItemsCount = 0;
         LinksFoundCount = 0;
         ErrorsCount = 0;
@@ -411,6 +436,8 @@ public sealed partial class ScannerViewModel : ObservableObject
                 FilteredLinks.Add(item);
             }
         }
+        OnPropertyChanged(nameof(EmptyStateVisibility));
+        OnPropertyChanged(nameof(FilteredLinksCountText));
     }
 
     private bool MatchesFilter(LinkItem item)

@@ -18,6 +18,9 @@ public sealed partial class MainWindow : Window
         SetTitleBar(AppTitleBar);
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
         AppWindow.SetIcon("Assets/AppIcon.ico");
+        AppWindow.Resize(new Windows.Graphics.SizeInt32(1150, 780));
+
+        NavFrame.Navigate(typeof(HomePage));
     }
 
     private void TitleBar_PaneToggleRequested(TitleBar sender, object args)

@@ -4,16 +4,472 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:local="using:WinSymlinkFinder.Pages"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:WinSymlinkFinder.Models"
     mc:Ignorable="d">
 
-    <Grid Padding="24,16,24,16" RowSpacing="24">
+    <Grid Padding="24,16,24,16" RowSpacing="14">
         <Grid.RowDefinitions>
+            <!-- 0: En-tête -->
             <RowDefinition Height="Auto" />
+            <!-- 1: Barre d'outils et sélection chemin -->
+            <RowDefinition Height="Auto" />
+            <!-- 2: Cartes de statistiques -->
+            <RowDefinition Height="Auto" />
+            <!-- 3: Filtres et recherche -->
+            <RowDefinition Height="Auto" />
+            <!-- 4: Liste des résultats -->
             <RowDefinition Height="*" />
+            <!-- 5: InfoBar de notification -->
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="Home" />
-        <TextBlock Grid.Row="1" Text="This is the Home page" />
+
+        <!-- 0: En-tête -->
+        <StackPanel Grid.Row="0" Spacing="4">
+            <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="Explorateur de Liens Symboliques &amp; Jonctions NTFS" />
+            <TextBlock
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{StaticResource BodyTextBlockStyle}"
+                Text="Recherchez, inspectez et analysez l'ensemble des liens symboliques et points de jonction sur vos disques." />
+        </StackPanel>
+
+        <!-- 1: Barre de commande & scan -->
+        <Border
+            Grid.Row="1"
+            Padding="16"
+            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="8">
+            <StackPanel Spacing="12">
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Sélection rapide lecteur -->
+                    <ComboBox
+                        Grid.Column="0"
+                        Width="100"
+                        Header="Lecteur"
+                        ItemsSource="{x:Bind ViewModel.AvailableDrives}"
+                        SelectedItem="{x:Bind ViewModel.SelectedPath, Mode=TwoWay}" />
+
+                    <!-- Chemin personnalisé -->
+                    <TextBox
+                        Grid.Column="1"
+                        Header="Dossier ou lecteur cible"
+                        PlaceholderText="ex: C:\ ou C:\Users"
+                        Text="{x:Bind ViewModel.SelectedPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <!-- Bouton Parcourir -->
+                    <Button
+                        Grid.Column="2"
+                        Margin="0,24,0,0"
+                        VerticalAlignment="Bottom"
+                        Click="BrowseFolder_Click"
+                        ToolTipService.ToolTip="Choisir un dossier">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xED25;" FontSize="14" />
+                            <TextBlock Text="Parcourir..." />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Bouton Démarrer -->
+                    <Button
+                        Grid.Column="3"
+                        Margin="0,24,0,0"
+                        VerticalAlignment="Bottom"
+                        Command="{x:Bind ViewModel.StartScanCommand}"
+                        IsEnabled="{x:Bind ViewModel.CanStartScan, Mode=OneWay}"
+                        Style="{StaticResource AccentButtonStyle}"
+                        ToolTipService.ToolTip="Démarrer l'analyse">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE768;" FontSize="14" />
+                            <TextBlock Text="Démarrer le scan" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Bouton Arrêter -->
+                    <Button
+                        Grid.Column="4"
+                        Margin="0,24,0,0"
+                        VerticalAlignment="Bottom"
+                        Command="{x:Bind ViewModel.StopScanCommand}"
+                        IsEnabled="{x:Bind ViewModel.IsScanning, Mode=OneWay}"
+                        ToolTipService.ToolTip="Arrêter l'analyse en cours">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE71A;" FontSize="14" />
+                            <TextBlock Text="Arrêter" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Bouton Effacer -->
+                    <Button
+                        Grid.Column="5"
+                        Margin="0,24,0,0"
+                        VerticalAlignment="Bottom"
+                        Command="{x:Bind ViewModel.ClearResultsCommand}"
+                        IsEnabled="{x:Bind ViewModel.CanStartScan, Mode=OneWay}"
+                        ToolTipService.ToolTip="Effacer les résultats">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE74D;" FontSize="14" />
+                            <TextBlock Text="Effacer" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Menu Exporter -->
+                    <DropDownButton
+                        Grid.Column="6"
+                        Margin="0,24,0,0"
+                        VerticalAlignment="Bottom"
+                        ToolTipService.ToolTip="Exporter les résultats">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xEDE1;" FontSize="14" />
+                            <TextBlock Text="Exporter" />
+                        </StackPanel>
+                        <DropDownButton.Flyout>
+                            <MenuFlyout>
+                                <MenuFlyoutItem Click="ExportCsv_Click" Text="Exporter au format CSV">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon Glyph="&#xE8A5;" />
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                                <MenuFlyoutItem Click="ExportJson_Click" Text="Exporter au format JSON">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon Glyph="&#xE943;" />
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                            </MenuFlyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+                </Grid>
+
+                <!-- Progression et état -->
+                <StackPanel Spacing="6">
+                    <ProgressBar
+                        IsIndeterminate="{x:Bind ViewModel.IsScanning, Mode=OneWay}"
+                        Visibility="{x:Bind ViewModel.ScanningProgressBarVisibility, Mode=OneWay}" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            Grid.Column="0"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind ViewModel.CurrentDirectoryStatus, Mode=OneWay}"
+                            TextTrimming="CharacterEllipsis" />
+                        <TextBlock
+                            Grid.Column="1"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}">
+                            <Run Text="Temps : " />
+                            <Run FontWeight="SemiBold" Text="{x:Bind ViewModel.ElapsedTimeText, Mode=OneWay}" />
+                            <Run Text=" | Éléments analysés : " />
+                            <Run FontWeight="SemiBold" Text="{x:Bind ViewModel.ScannedItemsCountText, Mode=OneWay}" />
+                            <Run Text=" | Erreurs d'accès : " />
+                            <Run FontWeight="SemiBold" Text="{x:Bind ViewModel.ErrorsCountText, Mode=OneWay}" />
+                        </TextBlock>
+                    </Grid>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- 2: Cartes de statistiques -->
+        <Grid Grid.Row="2" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Total Liens -->
+            <Border
+                Grid.Column="0"
+                Padding="12,8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="6">
+                <StackPanel Spacing="2">
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="Total Liens Détectés" />
+                    <TextBlock FontSize="20" FontWeight="Bold" Text="{x:Bind ViewModel.LinksFoundCountText, Mode=OneWay}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Symlinks Fichiers -->
+            <Border
+                Grid.Column="1"
+                Padding="12,8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="6">
+                <StackPanel Spacing="2">
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="Symlinks Fichiers" />
+                    <TextBlock FontSize="20" FontWeight="Bold" Text="{x:Bind ViewModel.SymlinkFilesCountText, Mode=OneWay}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Symlinks Dossiers -->
+            <Border
+                Grid.Column="2"
+                Padding="12,8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="6">
+                <StackPanel Spacing="2">
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="Symlinks Dossiers" />
+                    <TextBlock FontSize="20" FontWeight="Bold" Text="{x:Bind ViewModel.SymlinkDirsCountText, Mode=OneWay}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Jonctions NTFS -->
+            <Border
+                Grid.Column="3"
+                Padding="12,8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="6">
+                <StackPanel Spacing="2">
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="Jonctions NTFS" />
+                    <TextBlock FontSize="20" FontWeight="Bold" Text="{x:Bind ViewModel.JunctionsCountText, Mode=OneWay}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Liens Cassés / Orphelins -->
+            <Border
+                Grid.Column="4"
+                Padding="12,8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="6">
+                <StackPanel Spacing="2">
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="Liens Cassés / Orphelins" />
+                    <TextBlock
+                        FontSize="20"
+                        FontWeight="Bold"
+                        Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                        Text="{x:Bind ViewModel.BrokenLinksCountText, Mode=OneWay}" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- 3: Filtres et recherche rapide -->
+        <Border
+            Grid.Row="3"
+            Padding="12,8"
+            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="6">
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Recherche textuelle -->
+                <TextBox
+                    Grid.Column="0"
+                    PlaceholderText="Filtrer par nom, chemin ou cible..."
+                    Text="{x:Bind ViewModel.SearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                <!-- Filtre types -->
+                <CheckBox
+                    Grid.Column="1"
+                    Content="Fichiers"
+                    IsChecked="{x:Bind ViewModel.FilterFiles, Mode=TwoWay}" />
+                <CheckBox
+                    Grid.Column="2"
+                    Content="Dossiers"
+                    IsChecked="{x:Bind ViewModel.FilterDirectories, Mode=TwoWay}" />
+                <CheckBox
+                    Grid.Column="3"
+                    Content="Jonctions"
+                    IsChecked="{x:Bind ViewModel.FilterJunctions, Mode=TwoWay}" />
+                <CheckBox
+                    Grid.Column="4"
+                    Content="Uniquement cassés"
+                    IsChecked="{x:Bind ViewModel.FilterOnlyBroken, Mode=TwoWay}" />
+
+                <!-- Compteur de résultats filtrés -->
+                <TextBlock
+                    Grid.Column="5"
+                    VerticalAlignment="Center"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource CaptionTextBlockStyle}">
+                    <Run Text="Affichage : " />
+                    <Run FontWeight="SemiBold" Text="{x:Bind ViewModel.FilteredLinksCountText, Mode=OneWay}" />
+                    <Run Text=" élément(s)" />
+                </TextBlock>
+            </Grid>
+        </Border>
+
+        <!-- 4: Liste des résultats -->
+        <Border
+            Grid.Row="4"
+            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="6">
+            <Grid>
+                <!-- Vue quand la liste est vide -->
+                <StackPanel
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="8"
+                    Visibility="{x:Bind ViewModel.EmptyStateVisibility, Mode=OneWay}">
+                    <FontIcon Glyph="&#xE71B;" FontSize="40" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource SubtitleTextBlockStyle}"
+                        Text="Aucun lien symbolique à afficher" />
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="Sélectionnez un dossier et lancez le scan pour découvrir les liens." />
+                </StackPanel>
+
+                <!-- Liste des liens avec menu contextuel -->
+                <ListView
+                    ItemsSource="{x:Bind ViewModel.FilteredLinks}"
+                    SelectedItem="{x:Bind ViewModel.SelectedItem, Mode=TwoWay}"
+                    SelectionMode="Single">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="models:LinkItem">
+                            <Grid Padding="6,8" ColumnSpacing="12">
+                                <Grid.ContextFlyout>
+                                    <MenuFlyout>
+                                        <MenuFlyoutItem Click="OpenInExplorer_Click" Text="Ouvrir l'emplacement dans l'Explorateur">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xED25;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem Click="OpenTargetInExplorer_Click" Text="Ouvrir la cible dans l'Explorateur">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE8B7;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutSeparator />
+                                        <MenuFlyoutItem Click="CopyPath_Click" Text="Copier le chemin du lien">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE8C8;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem Click="CopyTarget_Click" Text="Copier le chemin de la cible">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE8C8;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                    </MenuFlyout>
+                                </Grid.ContextFlyout>
+
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Icône du type -->
+                                <FontIcon
+                                    Grid.Column="0"
+                                    VerticalAlignment="Center"
+                                    FontSize="20"
+                                    Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                    Glyph="{x:Bind IconGlyph}" />
+
+                                <!-- Détails du lien -->
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock FontWeight="SemiBold" Text="{x:Bind Name}" />
+                                        <!-- Badge de type -->
+                                        <Border
+                                            Padding="6,2"
+                                            Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                            CornerRadius="4">
+                                            <TextBlock
+                                                FontSize="11"
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                Text="{x:Bind TypeBadge}" />
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                        TextTrimming="CharacterEllipsis">
+                                        <Run Text="Emplacement : " />
+                                        <Run Text="{x:Bind Directory}" />
+                                    </TextBlock>
+                                    <TextBlock
+                                        Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                        TextTrimming="CharacterEllipsis">
+                                        <Run Text="Cible : " />
+                                        <Run FontWeight="SemiBold" Text="{x:Bind Target}" />
+                                    </TextBlock>
+                                </StackPanel>
+
+                                <!-- Statut Valide / Cassé -->
+                                <Border
+                                    Grid.Column="2"
+                                    Margin="8,0"
+                                    Padding="8,4"
+                                    VerticalAlignment="Center"
+                                    Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                    CornerRadius="4">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon
+                                            FontSize="12"
+                                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                            Glyph="{x:Bind StatusGlyph}" />
+                                        <TextBlock
+                                            FontSize="12"
+                                            FontWeight="SemiBold"
+                                            Text="{x:Bind StatusText}" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Date de modification -->
+                                <TextBlock
+                                    Grid.Column="3"
+                                    VerticalAlignment="Center"
+                                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="{x:Bind FormattedLastWriteTime}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+        </Border>
+
+        <!-- 5: Notification InfoBar -->
+        <InfoBar
+            Grid.Row="5"
+            Title="Notification"
+            IsOpen="{x:Bind ViewModel.IsStatusInfoBarOpen, Mode=TwoWay}"
+            Message="{x:Bind ViewModel.StatusInfoBarMessage, Mode=OneWay}"
+            Severity="Informational" />
     </Grid>
 </Page>
