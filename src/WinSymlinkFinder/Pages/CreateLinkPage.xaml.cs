@@ -25,65 +25,12 @@ public sealed partial class CreateLinkPage : Page
         {
             ViewModel.SelectedLinkType = tag switch
             {
+                "Junction" => LinkType.Junction,
                 "SymlinkDir" => LinkType.SymbolicLinkDirectory,
                 "SymlinkFile" => LinkType.SymbolicLinkFile,
-                "Junction" => LinkType.Junction,
                 "HardLink" => LinkType.HardLink,
-                _ => LinkType.SymbolicLinkDirectory
+                _ => LinkType.Junction
             };
-        }
-    }
-
-    private void BrowseLinkFolder_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            string initial = @"C:\";
-            if (!string.IsNullOrWhiteSpace(ViewModel.LinkPath))
-            {
-                try
-                {
-                    string? dir = Path.GetDirectoryName(ViewModel.LinkPath);
-                    if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir))
-                    {
-                        initial = dir;
-                    }
-                    else if (Directory.Exists(ViewModel.LinkPath))
-                    {
-                        initial = ViewModel.LinkPath;
-                    }
-                }
-                catch
-                {
-                }
-            }
-
-            string? folder = NativeDialogHelper.PickFolder(App.MainWindowHandle, initial, "Choisir le dossier conteneur du lien");
-            if (!string.IsNullOrEmpty(folder))
-            {
-                string currentName = "NouveauLien";
-                if (!string.IsNullOrWhiteSpace(ViewModel.LinkPath))
-                {
-                    try
-                    {
-                        string name = Path.GetFileName(ViewModel.LinkPath);
-                        if (!string.IsNullOrEmpty(name))
-                        {
-                            currentName = name;
-                        }
-                    }
-                    catch
-                    {
-                    }
-                }
-                ViewModel.LinkPath = Path.Combine(folder, currentName);
-            }
-        }
-        catch (Exception ex)
-        {
-            ViewModel.StatusMessage = $"Erreur lors de la sélection : {ex.Message}";
-            ViewModel.StatusSeverity = InfoBarSeverity.Error;
-            ViewModel.IsStatusOpen = true;
         }
     }
 
@@ -114,7 +61,7 @@ public sealed partial class CreateLinkPage : Page
                 }
             }
 
-            string? folder = NativeDialogHelper.PickFolder(App.MainWindowHandle, initial, "Sélectionner le dossier cible");
+            string? folder = NativeDialogHelper.PickFolder(App.MainWindowHandle, initial, "Sélectionner le dossier existant (source)");
             if (!string.IsNullOrEmpty(folder))
             {
                 ViewModel.TargetPath = folder;
@@ -155,10 +102,81 @@ public sealed partial class CreateLinkPage : Page
                 }
             }
 
-            string? file = NativeDialogHelper.PickFile(App.MainWindowHandle, "Sélectionner le fichier cible", initial);
+            string? file = NativeDialogHelper.PickFile(App.MainWindowHandle, "Sélectionner le fichier existant (source)", initial);
             if (!string.IsNullOrEmpty(file))
             {
                 ViewModel.TargetPath = file;
+            }
+        }
+        catch (Exception ex)
+        {
+            ViewModel.StatusMessage = $"Erreur lors de la sélection : {ex.Message}";
+            ViewModel.StatusSeverity = InfoBarSeverity.Error;
+            ViewModel.IsStatusOpen = true;
+        }
+    }
+
+    private void BrowseLinkFolder_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            string initial = @"C:\";
+            if (!string.IsNullOrWhiteSpace(ViewModel.LinkPath))
+            {
+                try
+                {
+                    string? dir = Path.GetDirectoryName(ViewModel.LinkPath);
+                    if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir))
+                    {
+                        initial = dir;
+                    }
+                    else if (Directory.Exists(ViewModel.LinkPath))
+                    {
+                        initial = ViewModel.LinkPath;
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            string? folder = NativeDialogHelper.PickFolder(App.MainWindowHandle, initial, "Choisir le dossier conteneur du nouveau lien");
+            if (!string.IsNullOrEmpty(folder))
+            {
+                // Nom par défaut dérivé de la cible ou du lien actuel
+                string defaultName = "NouveauLien";
+
+                if (!string.IsNullOrWhiteSpace(ViewModel.TargetPath))
+                {
+                    try
+                    {
+                        string leaf = Path.GetFileName(ViewModel.TargetPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+                        if (!string.IsNullOrEmpty(leaf))
+                        {
+                            defaultName = leaf;
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(ViewModel.LinkPath))
+                {
+                    try
+                    {
+                        string leaf = Path.GetFileName(ViewModel.LinkPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+                        if (!string.IsNullOrEmpty(leaf) && leaf != "NouveauLien")
+                        {
+                            defaultName = leaf;
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                ViewModel.LinkPath = Path.Combine(folder, defaultName);
             }
         }
         catch (Exception ex)

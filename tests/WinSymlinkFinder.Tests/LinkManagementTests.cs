@@ -87,4 +87,34 @@ public class LinkManagementTests
             }
         }
     }
+
+    [Fact]
+    public async Task CreateLinkAsync_RelativeLinkAcrossDifferentDrives_ThrowsInvalidOperationException()
+    {
+        var backupService = new LinkBackupService();
+        var linkService = new LinkManagementService(backupService);
+
+        string linkPath = @"E:\Games\MyGame\user\savedata";
+        string targetPath = @"C:\Users\Arnaud\OneDrive\Backup\savedata";
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            linkService.CreateLinkAsync(linkPath, targetPath, LinkType.SymbolicLinkDirectory, isRelative: true));
+
+        Assert.Contains("lecteurs distincts", ex.Message);
+    }
+
+    [Fact]
+    public async Task CreateLinkAsync_RelativeLinkForJunction_ThrowsInvalidOperationException()
+    {
+        var backupService = new LinkBackupService();
+        var linkService = new LinkManagementService(backupService);
+
+        string linkPath = @"C:\Temp\MyJunctionLink";
+        string targetPath = @"C:\Temp\MyOriginalFolder";
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            linkService.CreateLinkAsync(linkPath, targetPath, LinkType.Junction, isRelative: true));
+
+        Assert.Contains("Le mode relatif n'est pas supporté", ex.Message);
+    }
 }
