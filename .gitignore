@@ -1,0 +1,52 @@
+## Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Visual Studio
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+*.ide/
+
+## WinUI / Windows App SDK
+Generated Files/
+AppPackages/
+BundleArtifacts/
+Package.StoreAssociation.xml
+_pkg/
+
+## Test Results
+TestResults/
+[Tt]est[Rr]esult*/
+
+## User-specific files
+*.rsuser
+*.suo
+*.user
+*.useroptions
+
+## JetBrains / Rider / VS Code
+.idea/
+.vscode/
+*.swp
+*.*~
+
+## Windows OS files
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
