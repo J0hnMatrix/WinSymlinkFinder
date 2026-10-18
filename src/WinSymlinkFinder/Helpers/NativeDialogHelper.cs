@@ -192,14 +192,15 @@ public static class NativeDialogHelper
     [DllImport("ole32.dll")]
     private static extern void CoTaskMemFree(IntPtr pv);
 
+    private const int HRESULT_ERROR_CANCELLED = unchecked((int)0x800704C7);
+
     /// <summary>
     /// Ouvre la boîte de dialogue de sélection de dossier dans un thread STA dédié.
-    /// Tente d'abord IFileOpenDialog, puis bascule sur SHBrowseForFolder en cas de problème.
+    /// Tente d'abord IFileOpenDialog, puis bascule sur SHBrowseForFolder uniquement en cas d'échec technique (et jamais si l'utilisateur annule).
     /// </summary>
     public static string? PickFolder(IntPtr parentHwnd, string? initialFolder = null, string? title = "Sélectionner un dossier")
     {
         string? result = null;
-        Exception? caughtEx = null;
 
         AppLogService.Instance.LogInfo($"Demande de sélection de dossier. parentHwnd=0x{parentHwnd:X}, initialFolder='{initialFolder}'");
 
@@ -208,20 +209,27 @@ public static class NativeDialogHelper
             try
             {
                 // Tier 1 : IFileOpenDialog moderne
-                result = ShowFileOpenDialog(parentHwnd, initialFolder, title);
-                if (result != null)
+                var (path, isCancelled) = ShowFileOpenDialog(parentHwnd, initialFolder, title);
+                if (isCancelled)
                 {
+                    // L'utilisateur a explicitement cliqué sur Annuler ou fermé la boîte : arrêt immédiat
+                    AppLogService.Instance.LogInfo("Sélection de dossier annulée par l'utilisateur.");
+                    return;
+                }
+
+                if (path != null)
+                {
+                    result = path;
                     AppLogService.Instance.LogInfo($"Dossier sélectionné via IFileOpenDialog : '{result}'");
                     return;
                 }
             }
             catch (Exception ex)
             {
-                caughtEx = ex;
                 AppLogService.Instance.LogWarning($"Échec IFileOpenDialog : {ex.Message}. Tentative via SHBrowseForFolder...");
             }
 
-            // Si résultat null et pas d'annulation claire, ou exception : Tier 2 SHBrowseForFolder
+            // Tier 2 SHBrowseForFolder : exécuté uniquement en cas d'échec technique d'IFileOpenDialog (jamais en cas d'annulation)
             try
             {
                 result = ShowBrowseForFolderFallback(parentHwnd, title);
@@ -231,7 +239,7 @@ public static class NativeDialogHelper
                 }
                 else
                 {
-                    AppLogService.Instance.LogInfo("Sélection de dossier annulée par l'utilisateur.");
+                    AppLogService.Instance.LogInfo("Sélection de dossier annulée par l'utilisateur (SHBrowseForFolder).");
                 }
             }
             catch (Exception fallbackEx)
@@ -248,7 +256,7 @@ public static class NativeDialogHelper
         return result;
     }
 
-    private static string? ShowFileOpenDialog(IntPtr parentHwnd, string? initialFolder, string? title)
+    private static (string? Path, bool IsCancelled) ShowFileOpenDialog(IntPtr parentHwnd, string? initialFolder, string? title)
     {
         var dialog = (IFileOpenDialog)new FileOpenDialogRCW();
         try
@@ -274,12 +282,21 @@ public static class NativeDialogHelper
                 }
             }
 
-            // Tente d'abord avec parentHwnd, ou IntPtr.Zero si parentHwnd invalide
             int hr = dialog.Show(parentHwnd);
+            if (hr == HRESULT_ERROR_CANCELLED)
+            {
+                // Annulation explicite par l'utilisateur : ne pas réouvrir de fenêtre !
+                return (null, true);
+            }
+
             if (hr != 0 && parentHwnd != IntPtr.Zero)
             {
-                // Si l'appel a échoué avec le handle parent (ex: restriction WinUI), réessaie sans parent
+                // En cas d'erreur avec le handle parent (ex: restriction de threading), retente sans parent
                 hr = dialog.Show(IntPtr.Zero);
+                if (hr == HRESULT_ERROR_CANCELLED)
+                {
+                    return (null, true);
+                }
             }
 
             if (hr == 0) // S_OK
@@ -288,10 +305,11 @@ public static class NativeDialogHelper
                 if (item != null)
                 {
                     item.GetDisplayName(SIGDN.SIGDN_FILESYSPATH, out string path);
-                    return path;
+                    return (path, false);
                 }
             }
-            return null;
+
+            return (null, false);
         }
         finally
         {
@@ -309,13 +327,7 @@ public static class NativeDialogHelper
         };
 
         IntPtr pidl = SHBrowseForFolder(ref bi);
-        if (pidl == IntPtr.Zero && parentHwnd != IntPtr.Zero)
-        {
-            // Réessaie sans parent
-            bi.hwndOwner = IntPtr.Zero;
-            pidl = SHBrowseForFolder(ref bi);
-        }
-
+        // Si l'utilisateur clique sur Annuler (pidl == Zero), ne pas réouvrir !
         if (pidl != IntPtr.Zero)
         {
             try
@@ -367,9 +379,20 @@ public static class NativeDialogHelper
                 }
 
                 int hr = dialog.Show(parentHwnd);
+                if (hr == HRESULT_ERROR_CANCELLED)
+                {
+                    AppLogService.Instance.LogInfo("Sélection de fichier annulée par l'utilisateur.");
+                    return;
+                }
+
                 if (hr != 0 && parentHwnd != IntPtr.Zero)
                 {
                     hr = dialog.Show(IntPtr.Zero);
+                    if (hr == HRESULT_ERROR_CANCELLED)
+                    {
+                        AppLogService.Instance.LogInfo("Sélection de fichier annulée par l'utilisateur.");
+                        return;
+                    }
                 }
 
                 if (hr == 0)
@@ -433,9 +456,20 @@ public static class NativeDialogHelper
                 dialog.SetFileTypes(1, filterSpecPtr);
 
                 int hr = dialog.Show(parentHwnd);
+                if (hr == HRESULT_ERROR_CANCELLED)
+                {
+                    AppLogService.Instance.LogInfo("Sauvegarde de fichier annulée par l'utilisateur.");
+                    return;
+                }
+
                 if (hr != 0 && parentHwnd != IntPtr.Zero)
                 {
                     hr = dialog.Show(IntPtr.Zero);
+                    if (hr == HRESULT_ERROR_CANCELLED)
+                    {
+                        AppLogService.Instance.LogInfo("Sauvegarde de fichier annulée par l'utilisateur.");
+                        return;
+                    }
                 }
 
                 if (hr == 0)
