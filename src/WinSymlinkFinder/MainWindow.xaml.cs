@@ -18,7 +18,16 @@ public sealed partial class MainWindow : Window
         SetTitleBar(AppTitleBar);
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
         AppWindow.SetIcon("Assets/AppIcon.ico");
-        AppWindow.Resize(new Windows.Graphics.SizeInt32(1150, 780));
+        AppWindow.Resize(new Windows.Graphics.SizeInt32(1605, 1015));
+
+        var displayArea = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary);
+        if (displayArea != null)
+        {
+            var centeredPosition = AppWindow.Position;
+            centeredPosition.X = Math.Max(0, (displayArea.WorkArea.Width - 1605) / 2);
+            centeredPosition.Y = Math.Max(0, (displayArea.WorkArea.Height - 1015) / 2);
+            AppWindow.Move(centeredPosition);
+        }
 
         NavFrame.Navigate(typeof(HomePage));
     }

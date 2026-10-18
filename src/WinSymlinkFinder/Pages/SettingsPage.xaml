@@ -7,8 +7,8 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <ScrollViewer Padding="24,16,24,24">
-        <StackPanel MaxWidth="800" HorizontalAlignment="Left" Spacing="24">
+    <ScrollViewer Padding="10,12,16,16">
+        <StackPanel HorizontalAlignment="Stretch" Spacing="16">
             <!-- En-tête -->
             <StackPanel Spacing="4">
                 <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="Paramètres" />

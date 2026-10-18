@@ -8,7 +8,7 @@
     xmlns:models="using:WinSymlinkFinder.Models"
     mc:Ignorable="d">
 
-    <Grid Padding="24,16,24,16" RowSpacing="14">
+    <Grid Padding="8,10,14,12" RowSpacing="12">
         <Grid.RowDefinitions>
             <!-- 0: En-tête -->
             <RowDefinition Height="Auto" />
@@ -352,12 +352,20 @@
 
                 <!-- Liste des liens avec menu contextuel -->
                 <ListView
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
                     ItemsSource="{x:Bind ViewModel.FilteredLinks}"
                     SelectedItem="{x:Bind ViewModel.SelectedItem, Mode=TwoWay}"
                     SelectionMode="Single">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Padding" Value="8,4" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="models:LinkItem">
-                            <Grid Padding="6,8" ColumnSpacing="12">
+                            <Grid HorizontalAlignment="Stretch" Padding="4,6" ColumnSpacing="12">
                                 <Grid.ContextFlyout>
                                     <MenuFlyout>
                                         <MenuFlyoutItem Click="OpenInExplorer_Click" Text="Ouvrir l'emplacement dans l'Explorateur">

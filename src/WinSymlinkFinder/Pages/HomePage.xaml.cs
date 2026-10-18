@@ -18,18 +18,14 @@ public sealed partial class HomePage : Page
         DataContext = ViewModel;
     }
 
-    private async void BrowseFolder_Click(object sender, RoutedEventArgs e)
+    private void BrowseFolder_Click(object sender, RoutedEventArgs e)
     {
         try
         {
-            var folderPicker = new Windows.Storage.Pickers.FolderPicker();
-            WinRT.Interop.InitializeWithWindow.Initialize(folderPicker, App.MainWindowHandle);
-            folderPicker.FileTypeFilter.Add("*");
-
-            var folder = await folderPicker.PickSingleFolderAsync();
-            if (folder != null)
+            string? folder = Helpers.NativeDialogHelper.PickFolder(App.MainWindowHandle, ViewModel.SelectedPath);
+            if (!string.IsNullOrEmpty(folder))
             {
-                ViewModel.SelectedPath = folder.Path;
+                ViewModel.SelectedPath = folder;
             }
         }
         catch (Exception ex)
@@ -43,16 +39,11 @@ public sealed partial class HomePage : Page
     {
         try
         {
-            var savePicker = new Windows.Storage.Pickers.FileSavePicker();
-            WinRT.Interop.InitializeWithWindow.Initialize(savePicker, App.MainWindowHandle);
-            savePicker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary;
-            savePicker.FileTypeChoices.Add("Fichier CSV (*.csv)", new List<string> { ".csv" });
-            savePicker.SuggestedFileName = $"liens_ntfs_{DateTime.Now:yyyyMMdd_HHmmss}";
-
-            var file = await savePicker.PickSaveFileAsync();
-            if (file != null)
+            string defaultName = $"liens_ntfs_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+            string? file = Helpers.NativeDialogHelper.PickSaveFile(App.MainWindowHandle, ".csv", "Fichier CSV", defaultName);
+            if (!string.IsNullOrEmpty(file))
             {
-                await ViewModel.ExportCsvAsync(file.Path);
+                await ViewModel.ExportCsvAsync(file);
             }
         }
         catch (Exception ex)
@@ -66,16 +57,11 @@ public sealed partial class HomePage : Page
     {
         try
         {
-            var savePicker = new Windows.Storage.Pickers.FileSavePicker();
-            WinRT.Interop.InitializeWithWindow.Initialize(savePicker, App.MainWindowHandle);
-            savePicker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary;
-            savePicker.FileTypeChoices.Add("Fichier JSON (*.json)", new List<string> { ".json" });
-            savePicker.SuggestedFileName = $"liens_ntfs_{DateTime.Now:yyyyMMdd_HHmmss}";
-
-            var file = await savePicker.PickSaveFileAsync();
-            if (file != null)
+            string defaultName = $"liens_ntfs_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+            string? file = Helpers.NativeDialogHelper.PickSaveFile(App.MainWindowHandle, ".json", "Fichier JSON", defaultName);
+            if (!string.IsNullOrEmpty(file))
             {
-                await ViewModel.ExportJsonAsync(file.Path);
+                await ViewModel.ExportJsonAsync(file);
             }
         }
         catch (Exception ex)
