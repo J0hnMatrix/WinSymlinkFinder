@@ -122,6 +122,7 @@ public sealed class NtfsLinkScanner : INtfsLinkScanner
                             Target = reparseInfo.TargetPath,
                             IsTargetValid = reparseInfo.IsTargetValid,
                             IsRelative = reparseInfo.IsRelative,
+                            IsSystemLink = CheckIsSystemLink(subDir),
                             CreationTime = subDir.CreationTime,
                             LastWriteTime = subDir.LastWriteTime,
                             FileSizeBytes = null
@@ -196,6 +197,7 @@ public sealed class NtfsLinkScanner : INtfsLinkScanner
                             Target = reparseInfo.TargetPath,
                             IsTargetValid = reparseInfo.IsTargetValid,
                             IsRelative = reparseInfo.IsRelative,
+                            IsSystemLink = CheckIsSystemLink(file),
                             CreationTime = file.CreationTime,
                             LastWriteTime = file.LastWriteTime,
                             FileSizeBytes = file.Length
@@ -224,5 +226,39 @@ public sealed class NtfsLinkScanner : INtfsLinkScanner
             ErrorsEncountered = errorsEncountered,
             CurrentDirectory = "Scan terminé."
         });
+    }
+
+    private static readonly HashSet<string> KnownSystemLinkNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Application Data", "Cookies", "Local Settings", "My Documents",
+        "NetHood", "PrintHood", "Recent", "SendTo", "Start Menu", "Templates",
+        "Documents and Settings", "All Users", "Default User"
+    };
+
+    private static bool CheckIsSystemLink(FileSystemInfo info)
+    {
+        try
+        {
+            if ((info.Attributes & FileAttributes.System) != 0)
+            {
+                return true;
+            }
+
+            string windowsPath = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+            if (!string.IsNullOrEmpty(windowsPath) && info.FullName.StartsWith(windowsPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (KnownSystemLinkNames.Contains(info.Name))
+            {
+                return true;
+            }
+        }
+        catch
+        {
+        }
+
+        return false;
     }
 }

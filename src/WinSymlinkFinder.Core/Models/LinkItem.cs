@@ -15,9 +15,15 @@ public sealed class LinkItem
     public required string Target { get; init; }
     public bool IsTargetValid { get; init; }
     public bool IsRelative { get; init; }
+    public bool IsSystemLink { get; init; }
     public DateTime CreationTime { get; init; }
     public DateTime LastWriteTime { get; init; }
     public long? FileSizeBytes { get; init; }
+
+    /// <summary>
+    /// Indique si le lien peut être supprimé (les liens système Windows sont protégés).
+    /// </summary>
+    public bool CanBeDeleted => !IsSystemLink;
 
     /// <summary>
     /// Libellé convivial du type de lien pour l'UI.
@@ -27,6 +33,7 @@ public sealed class LinkItem
         LinkType.SymbolicLinkFile => "Lien symbolique (Fichier)",
         LinkType.SymbolicLinkDirectory => "Lien symbolique (Dossier)",
         LinkType.Junction => "Jonction NTFS (Dossier)",
+        LinkType.HardLink => "Lien physique (Hard Link)",
         LinkType.AppExecLink => "Alias d'application (AppExecLink)",
         _ => "Autre point d'analyse"
     };
@@ -39,6 +46,7 @@ public sealed class LinkItem
         LinkType.SymbolicLinkFile => "Symlink Fichier",
         LinkType.SymbolicLinkDirectory => "Symlink Dossier",
         LinkType.Junction => "Jonction",
+        LinkType.HardLink => "Hard Link",
         LinkType.AppExecLink => "Alias App",
         _ => "Reparse"
     };
@@ -51,6 +59,7 @@ public sealed class LinkItem
         LinkType.SymbolicLinkFile => "\uE7C3",      // Document / Page
         LinkType.SymbolicLinkDirectory => "\uED25", // FolderHorizontal
         LinkType.Junction => "\uE8B7",              // Folder
+        LinkType.HardLink => "\uE71B",              // Link
         LinkType.AppExecLink => "\uE71D",          // AllApps
         _ => "\uE71B"                              // Link
     };

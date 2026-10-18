@@ -21,21 +21,36 @@ Application de bureau moderne développée en **C# / .NET 8** et **WinUI 3 (Wind
 
 ## ✨ Fonctionnalités
 
-- **Interface Fluent Design WinUI 3** : respect des standards graphiques Windows 11 (Mica, navigation NavigationView, icônes Segoe Fluent).
-- **Scan ciblé ou global** : sélection d'un lecteur complet ou d'un dossier personnalisé.
+- **Interface Fluent Design WinUI 3** : respect des standards graphiques Windows 11 (Mica, navigation latérale `NavigationView`, icônes Segoe Fluent, fenêtre 1605x1015 centrée).
+- **Scan ciblé ou global** : sélection d'un lecteur complet ou d'un dossier personnalisé avec sélecteur natif.
 - **Détection complète** :
   - Liens symboliques de fichiers (`Symlink File`)
   - Liens symboliques de dossiers (`Symlink Directory`)
   - Jonctions de répertoires NTFS (`Junction`)
+  - Liens physiques (`Hard Link`)
 - **Inspection détaillée** :
   - Nom et chemin d'accès complet du lien.
   - Cible réelle pointée (chemin absolu ou relatif).
   - Statut du lien : valide ou orphelin (cible introuvable / cassée).
+  - Détection et badge de protection pour les liens système Windows.
   - Date de création et modification.
+- **Création de liens NTFS** (menu dédié dans la barre latérale) :
+  - Création de liens symboliques de dossiers ou de fichiers (relatifs ou absolus).
+  - Création de points de jonction NTFS.
+  - Création de liens physiques (Hard Links).
+- **Suppression sécurisée & Protection système** :
+  - Suppression directe d'un lien depuis le menu contextuel du scanner sans toucher aux fichiers ou dossiers cibles.
+  - **Protection intégrée de l'OS** : détection et blocage de la suppression des liens et jonctions critiques du système d'exploitation Windows (ex: `Application Data`, `Documents and Settings`, `Local Settings`, etc.).
+- **Sauvegardes & Restauration automatique** :
+  - Sauvegarde automatique de tout lien supprimé dans un historique persistant (`%LOCALAPPDATA%\WinSymlinkFinder\Backups`).
+  - Restauration immédiate en un clic à son emplacement d'origine.
+  - Exportation de l'historique au format CSV.
+- **Mode Diagnostic / Debug** :
+  - Fenêtre de logs en direct accessible en cliquant 7 fois sur le numéro de version dans les Paramètres.
 - **Actions rapides** :
-  - Ouvrir l'emplacement dans l'Explorateur Windows.
+  - Ouvrir l'emplacement ou la cible dans l'Explorateur Windows.
   - Copier le chemin source ou cible dans le presse-papiers.
-  - Exporter les résultats au format CSV / JSON.
+  - Exporter les résultats du scan au format CSV / JSON.
 
 ---
 

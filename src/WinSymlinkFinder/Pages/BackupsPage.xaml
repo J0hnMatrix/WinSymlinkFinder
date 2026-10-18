@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="WinSymlinkFinder.Pages.BackupsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:WinSymlinkFinder.Models"
+    mc:Ignorable="d">
+
+    <Grid Padding="12,14,16,16" RowSpacing="14">
+        <Grid.RowDefinitions>
+            <!-- 0: En-tête -->
+            <RowDefinition Height="Auto" />
+            <!-- 1: Barre d'actions -->
+            <RowDefinition Height="Auto" />
+            <!-- 2: Liste des sauvegardes -->
+            <RowDefinition Height="*" />
+            <!-- 3: InfoBar -->
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- 0: En-tête -->
+        <StackPanel Grid.Row="0" Spacing="4">
+            <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="Sauvegardes &amp; Restauration des liens" />
+            <TextBlock
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{StaticResource BodyTextBlockStyle}"
+                Text="Historique automatique des liens supprimés dans l'application. Restaurez-les facilement ou exportez la liste." />
+        </StackPanel>
+
+        <!-- 1: Barre d'actions -->
+        <Border
+            Grid.Row="1"
+            Padding="14"
+            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                    <Button Click="Refresh_Click" ToolTipService.ToolTip="Recharger les sauvegardes">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE72C;" FontSize="14" />
+                            <TextBlock Text="Actualiser" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Click="ExportCsv_Click" ToolTipService.ToolTip="Exporter l'historique en CSV">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xEDE1;" FontSize="14" />
+                            <TextBlock Text="Exporter (CSV)..." />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <!-- Nombre de sauvegardes -->
+                <TextBlock
+                    Grid.Column="2"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource CaptionTextBlockStyle}">
+                    <Run Text="Total sauvegardé : " />
+                    <Run FontWeight="SemiBold" Text="{x:Bind ViewModel.Backups.Count, Mode=OneWay}" />
+                    <Run Text=" lien(s)" />
+                </TextBlock>
+            </Grid>
+        </Border>
+
+        <!-- 2: Liste des sauvegardes -->
+        <Border
+            Grid.Row="2"
+            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="8">
+            <Grid>
+                <!-- Vue vide -->
+                <StackPanel
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="8"
+                    Visibility="{x:Bind ViewModel.EmptyStateVisibility, Mode=OneWay}">
+                    <FontIcon Glyph="&#xE777;" FontSize="40" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource SubtitleTextBlockStyle}"
+                        Text="Aucune sauvegarde de lien supprimé" />
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="Lorsqu'un lien est supprimé depuis le scanner, une sauvegarde est automatiquement conservée ici." />
+                </StackPanel>
+
+                <!-- Liste -->
+                <ListView
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
+                    ItemsSource="{x:Bind ViewModel.Backups}"
+                    SelectedItem="{x:Bind ViewModel.SelectedBackup, Mode=TwoWay}"
+                    SelectionMode="Single">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Padding" Value="8,6" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="models:DeletedLinkBackup">
+                            <Grid HorizontalAlignment="Stretch" Padding="6,6" ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Icône -->
+                                <FontIcon
+                                    Grid.Column="0"
+                                    VerticalAlignment="Center"
+                                    FontSize="20"
+                                    Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                    Glyph="{x:Bind IconGlyph}" />
+
+                                <!-- Infos -->
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock FontWeight="SemiBold" Text="{x:Bind Name}" />
+                                        <Border Padding="6,2" Background="{ThemeResource SubtleFillColorSecondaryBrush}" CornerRadius="4">
+                                            <TextBlock FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind TypeDisplayName}" />
+                                        </Border>
+                                        <TextBlock
+                                            VerticalAlignment="Center"
+                                            FontSize="11"
+                                            Foreground="{ThemeResource TextFillColorTertiaryBrush}">
+                                            <Run Text="Supprimé le " />
+                                            <Run Text="{x:Bind FormattedDeletedAt}" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <TextBlock
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                        TextTrimming="CharacterEllipsis">
+                                        <Run Text="Emplacement d'origine : " />
+                                        <Run Text="{x:Bind OriginalPath}" />
+                                    </TextBlock>
+                                    <TextBlock
+                                        Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                        TextTrimming="CharacterEllipsis">
+                                        <Run Text="Cible : " />
+                                        <Run FontWeight="SemiBold" Text="{x:Bind Target}" />
+                                    </TextBlock>
+                                </StackPanel>
+
+                                <!-- Bouton Restaurer -->
+                                <Button
+                                    Grid.Column="2"
+                                    Margin="4,0"
+                                    VerticalAlignment="Center"
+                                    Click="RestoreBackup_Click"
+                                    IsEnabled="{x:Bind CanBeRestored}"
+                                    Style="{StaticResource AccentButtonStyle}"
+                                    ToolTipService.ToolTip="Restaurer ce lien à son emplacement d'origine">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE777;" FontSize="12" />
+                                        <TextBlock Text="Restaurer" />
+                                    </StackPanel>
+                                </Button>
+
+                                <!-- Bouton Supprimer l'historique -->
+                                <Button
+                                    Grid.Column="3"
+                                    Margin="4,0"
+                                    VerticalAlignment="Center"
+                                    Click="DeleteBackup_Click"
+                                    ToolTipService.ToolTip="Retirer de l'historique de sauvegarde">
+                                    <FontIcon Glyph="&#xE74D;" FontSize="14" Foreground="{ThemeResource SystemFillColorCriticalBrush}" />
+                                </Button>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+        </Border>
+
+        <!-- 3: InfoBar -->
+        <InfoBar
+            Grid.Row="3"
+            IsOpen="{x:Bind ViewModel.IsStatusOpen, Mode=TwoWay}"
+            Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
+            Severity="{x:Bind ViewModel.StatusSeverity, Mode=OneWay}" />
+    </Grid>
+</Page>

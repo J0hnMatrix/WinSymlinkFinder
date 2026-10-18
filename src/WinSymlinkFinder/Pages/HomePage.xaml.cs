@@ -112,4 +112,39 @@ public sealed partial class HomePage : Page
         var item = (sender as FrameworkElement)?.DataContext as LinkItem;
         ViewModel.CopyTarget(item);
     }
+
+    private async void DeleteLink_Click(object sender, RoutedEventArgs e)
+    {
+        var item = (sender as FrameworkElement)?.DataContext as LinkItem;
+        if (item == null) return;
+
+        if (item.IsSystemLink)
+        {
+            var errorDialog = new ContentDialog
+            {
+                XamlRoot = this.XamlRoot,
+                Title = "Suppression impossible",
+                Content = $"Le lien '{item.Name}' est un composant système Windows protégé.\nIl ne peut pas être supprimé afin de préserver l'intégrité et la stabilité du système d'exploitation.",
+                CloseButtonText = "Compris"
+            };
+            await errorDialog.ShowAsync();
+            return;
+        }
+
+        var confirmDialog = new ContentDialog
+        {
+            XamlRoot = this.XamlRoot,
+            Title = "Confirmer la suppression du lien",
+            Content = $"Êtes-vous sûr de vouloir supprimer le lien suivant ?\n\nNom : {item.Name}\nType : {item.TypeDisplayName}\nEmplacement : {item.FullPath}\nCible : {item.Target}\n\nNote : Seul le lien sera supprimé ; la cible d'origine restera totalement intacte.\nUne sauvegarde sera automatiquement effectuée pour permettre une restauration ultérieure.",
+            PrimaryButtonText = "Supprimer le lien",
+            CloseButtonText = "Annuler",
+            DefaultButton = ContentDialogButton.Close
+        };
+
+        var result = await confirmDialog.ShowAsync();
+        if (result == ContentDialogResult.Primary)
+        {
+            await ViewModel.DeleteLinkAsync(item);
+        }
+    }
 }

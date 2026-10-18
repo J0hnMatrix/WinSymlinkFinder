@@ -46,6 +46,20 @@
                         <FontIcon Glyph="&#xE71B;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <NavigationViewItem
+                    Content="Créer un lien"
+                    Tag="create_link">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE710;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem
+                    Content="Sauvegardes &amp; Restauration"
+                    Tag="backups">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE777;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
                 <NavigationViewItem Content="À propos &amp; Reparse Points" Tag="about">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE946;" />

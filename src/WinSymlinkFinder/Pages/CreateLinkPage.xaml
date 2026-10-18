@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="WinSymlinkFinder.Pages.CreateLinkPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer Padding="12,14,16,16">
+        <StackPanel HorizontalAlignment="Stretch" Spacing="16">
+            <!-- En-tête -->
+            <StackPanel Spacing="4">
+                <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="Créer un lien ou point de jonction" />
+                <TextBlock
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource BodyTextBlockStyle}"
+                    Text="Créez facilement des liens symboliques, des points de jonction NTFS ou des hard links sur vos disques." />
+            </StackPanel>
+
+            <!-- Formulaire de création -->
+            <Border
+                Padding="20"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+                <StackPanel Spacing="20">
+                    <!-- 1. Choix du type de lien -->
+                    <StackPanel Spacing="8">
+                        <TextBlock FontWeight="SemiBold" Text="1. Type de lien à créer" />
+                        <RadioButtons x:Name="LinkTypeRadioButtons" SelectedIndex="0" SelectionChanged="LinkTypeRadioButtons_SelectionChanged">
+                            <RadioButton Content="Lien symbolique de dossier (Directory Symlink)" Tag="SymlinkDir" IsChecked="True" />
+                            <RadioButton Content="Lien symbolique de fichier (File Symlink)" Tag="SymlinkFile" />
+                            <RadioButton Content="Point de jonction NTFS (Dossier uniquement)" Tag="Junction" />
+                            <RadioButton Content="Lien physique (Hard Link fichier, même volume)" Tag="HardLink" />
+                        </RadioButtons>
+                    </StackPanel>
+
+                    <!-- 2. Emplacement du lien à créer -->
+                    <StackPanel Spacing="8">
+                        <TextBlock FontWeight="SemiBold" Text="2. Emplacement du nouveau lien (Chemin complet)" />
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox
+                                x:Name="LinkPathTextBox"
+                                Grid.Column="0"
+                                PlaceholderText="ex: C:\MonProjet\DossierLien ou C:\Docs\FichierLien.txt"
+                                Text="{x:Bind ViewModel.LinkPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <Button
+                                Grid.Column="1"
+                                Click="BrowseLinkFolder_Click"
+                                ToolTipService.ToolTip="Choisir le dossier conteneur">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon Glyph="&#xED25;" FontSize="14" />
+                                    <TextBlock Text="Dossier parent..." />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="Spécifiez le chemin d'accès complet du lien qui sera créé. Aucun fichier ou dossier ne doit déjà exister à cet endroit." />
+                    </StackPanel>
+
+                    <!-- 3. Cible du lien -->
+                    <StackPanel Spacing="8">
+                        <TextBlock FontWeight="SemiBold" Text="3. Cible vers laquelle pointe le lien" />
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox
+                                x:Name="TargetPathTextBox"
+                                Grid.Column="0"
+                                PlaceholderText="ex: D:\Donnees\RepertoireCible ou D:\Archives\FichierOriginal.txt"
+                                Text="{x:Bind ViewModel.TargetPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <Button
+                                Grid.Column="1"
+                                Click="BrowseTargetFolder_Click"
+                                ToolTipService.ToolTip="Sélectionner un dossier cible">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon Glyph="&#xED25;" FontSize="14" />
+                                    <TextBlock Text="Dossier cible..." />
+                                </StackPanel>
+                            </Button>
+                            <Button
+                                Grid.Column="2"
+                                Click="BrowseTargetFile_Click"
+                                ToolTipService.ToolTip="Sélectionner un fichier cible">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon Glyph="&#xE7C3;" FontSize="14" />
+                                    <TextBlock Text="Fichier cible..." />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- 4. Options -->
+                    <CheckBox
+                        Content="Créer un lien relatif (Recommandé pour la portabilité entre dossiers, symlinks uniquement)"
+                        IsChecked="{x:Bind ViewModel.IsRelative, Mode=TwoWay}" />
+
+                    <!-- 5. Bouton de soumission -->
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button
+                            Command="{x:Bind ViewModel.CreateLinkCommand}"
+                            IsEnabled="{x:Bind ViewModel.CanCreateLink, Mode=OneWay}"
+                            Style="{StaticResource AccentButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE710;" FontSize="14" />
+                                <TextBlock Text="Créer le lien maintenant" />
+                            </StackPanel>
+                        </Button>
+                        <ProgressRing
+                            IsActive="{x:Bind ViewModel.IsCreating, Mode=OneWay}"
+                            Width="20"
+                            Height="20" />
+                    </StackPanel>
+
+                    <!-- Message d'information / erreur -->
+                    <InfoBar
+                        IsOpen="{x:Bind ViewModel.IsStatusOpen, Mode=TwoWay}"
+                        Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
+                        Severity="{x:Bind ViewModel.StatusSeverity, Mode=OneWay}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Guide des types de liens -->
+            <Border
+                Padding="16"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+                <StackPanel Spacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE946;" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="Aide &amp; Bonnes pratiques" />
+                    </StackPanel>
+
+                    <Grid ColumnSpacing="16" RowSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <!-- Symlink Dossier -->
+                        <Border Grid.Row="0" Grid.Column="0" Padding="12" Background="{ThemeResource SubtleFillColorSecondaryBrush}" CornerRadius="6">
+                            <StackPanel Spacing="4">
+                                <TextBlock FontWeight="SemiBold" Text="Symlink Dossier" />
+                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Text="Pointe vers un dossier local ou distant (partage réseau UNC). Peut utiliser un chemin relatif ou absolu." />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Symlink Fichier -->
+                        <Border Grid.Row="0" Grid.Column="1" Padding="12" Background="{ThemeResource SubtleFillColorSecondaryBrush}" CornerRadius="6">
+                            <StackPanel Spacing="4">
+                                <TextBlock FontWeight="SemiBold" Text="Symlink Fichier" />
+                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Text="Pointe vers un fichier unique. Transparent pour la majorité des applications." />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Jonction NTFS -->
+                        <Border Grid.Row="1" Grid.Column="0" Padding="12" Background="{ThemeResource SubtleFillColorSecondaryBrush}" CornerRadius="6">
+                            <StackPanel Spacing="4">
+                                <TextBlock FontWeight="SemiBold" Text="Jonction NTFS" />
+                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Text="Idéal pour les dossiers locaux. Ne requiert aucun droit administrateur spécialisé." />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Hard Link -->
+                        <Border Grid.Row="1" Grid.Column="1" Padding="12" Background="{ThemeResource SubtleFillColorSecondaryBrush}" CornerRadius="6">
+                            <StackPanel Spacing="4">
+                                <TextBlock FontWeight="SemiBold" Text="Hard Link" />
+                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Text="Pointe directement sur l'inode/MFT d'un fichier. Obligatoirement sur la même partition NTFS." />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

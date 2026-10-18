@@ -335,6 +335,73 @@ public static class NativeDialogHelper
     }
 
     /// <summary>
+    /// Ouvre la boîte de dialogue native pour sélectionner un fichier existant dans un thread STA dédié.
+    /// </summary>
+    public static string? PickFile(IntPtr parentHwnd, string? title = null, string? initialFolder = null)
+    {
+        string? result = null;
+        AppLogService.Instance.LogInfo($"Demande de sélection de fichier. initialFolder='{initialFolder}'");
+
+        var staThread = new Thread(() =>
+        {
+            var dialog = (IFileOpenDialog)new FileOpenDialogRCW();
+            try
+            {
+                dialog.SetOptions(FOS.FOS_FORCEFILESYSTEM | FOS.FOS_FILEMUSTEXIST);
+                if (!string.IsNullOrEmpty(title))
+                {
+                    dialog.SetTitle(title);
+                }
+
+                if (!string.IsNullOrEmpty(initialFolder) && Directory.Exists(initialFolder))
+                {
+                    try
+                    {
+                        var shellItemGuid = new Guid("43826d1e-e718-42ee-bc55-a1e261c37bfe");
+                        if (SHCreateItemFromParsingName(initialFolder, IntPtr.Zero, ref shellItemGuid, out var initialItem) == 0 && initialItem != null)
+                        {
+                            dialog.SetFolder(initialItem);
+                        }
+                    }
+                    catch { }
+                }
+
+                int hr = dialog.Show(parentHwnd);
+                if (hr != 0 && parentHwnd != IntPtr.Zero)
+                {
+                    hr = dialog.Show(IntPtr.Zero);
+                }
+
+                if (hr == 0)
+                {
+                    dialog.GetResult(out IShellItem item);
+                    if (item != null)
+                    {
+                        item.GetDisplayName(SIGDN.SIGDN_FILESYSPATH, out string path);
+                        result = path;
+                        AppLogService.Instance.LogInfo($"Fichier sélectionné : '{result}'");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogService.Instance.LogError("Erreur lors de la sélection de fichier", ex);
+            }
+            finally
+            {
+                Marshal.ReleaseComObject(dialog);
+            }
+        });
+
+        staThread.SetApartmentState(ApartmentState.STA);
+        staThread.IsBackground = true;
+        staThread.Start();
+        staThread.Join();
+
+        return result;
+    }
+
+    /// <summary>
     /// Ouvre la boîte de dialogue native pour enregistrer un fichier dans un thread STA dédié.
     /// </summary>
     public static string? PickSaveFile(IntPtr parentHwnd, string extension, string filterName, string defaultFileName = "")

@@ -20,6 +20,7 @@ public sealed partial class ScannerViewModel : ObservableObject
 {
     private readonly INtfsLinkScanner _scanner;
     private readonly IExportService _exportService;
+    private readonly ILinkManagementService _linkManager;
     private readonly DispatcherQueue _dispatcherQueue;
 
     private CancellationTokenSource? _scanCts;
@@ -113,14 +114,15 @@ public sealed partial class ScannerViewModel : ObservableObject
 
     public Visibility EmptyStateVisibility => FilteredLinks.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-    public ScannerViewModel() : this(new NtfsLinkScanner(), new ExportService())
+    public ScannerViewModel() : this(new NtfsLinkScanner(), new ExportService(), new LinkManagementService())
     {
     }
 
-    public ScannerViewModel(INtfsLinkScanner scanner, IExportService exportService)
+    public ScannerViewModel(INtfsLinkScanner scanner, IExportService exportService, ILinkManagementService? linkManager = null)
     {
         _scanner = scanner;
         _exportService = exportService;
+        _linkManager = linkManager ?? new LinkManagementService();
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread() ?? DispatcherQueue.GetForCurrentThread();
 
         LoadAvailableDrives();
@@ -471,6 +473,55 @@ public sealed partial class ScannerViewModel : ObservableObject
         return item.Name.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase)
             || item.FullPath.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase)
             || item.Target.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [RelayCommand]
+    public async Task<bool> DeleteLinkAsync(LinkItem? item)
+    {
+        item ??= SelectedItem;
+        if (item == null) return false;
+
+        if (item.IsSystemLink)
+        {
+            ShowNotification("Impossible de supprimer un lien système protégé.");
+            return false;
+        }
+
+        try
+        {
+            await _linkManager.DeleteLinkAsync(item);
+            _allLinks.Remove(item);
+            FilteredLinks.Remove(item);
+            LinksFoundCount = _allLinks.Count;
+
+            switch (item.Type)
+            {
+                case LinkType.SymbolicLinkFile:
+                    SymlinkFilesCount = Math.Max(0, SymlinkFilesCount - 1);
+                    break;
+                case LinkType.SymbolicLinkDirectory:
+                    SymlinkDirsCount = Math.Max(0, SymlinkDirsCount - 1);
+                    break;
+                case LinkType.Junction:
+                    JunctionsCount = Math.Max(0, JunctionsCount - 1);
+                    break;
+            }
+
+            if (!item.IsTargetValid)
+            {
+                BrokenLinksCount = Math.Max(0, BrokenLinksCount - 1);
+            }
+
+            OnPropertyChanged(nameof(EmptyStateVisibility));
+            OnPropertyChanged(nameof(FilteredLinksCountText));
+            ShowNotification($"Lien '{item.Name}' supprimé avec succès. Une sauvegarde a été créée.");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            ShowNotification($"Erreur lors de la suppression : {ex.Message}");
+            return false;
+        }
     }
 
     private void ShowNotification(string message)

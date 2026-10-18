@@ -26,6 +26,11 @@ public enum LinkType
     AppExecLink,
 
     /// <summary>
+    /// Lien physique NTFS (fichier uniquement).
+    /// </summary>
+    HardLink,
+
+    /// <summary>
     /// Autre point d'analyse NTFS (WOF, Cloud Files, etc.).
     /// </summary>
     OtherReparsePoint
