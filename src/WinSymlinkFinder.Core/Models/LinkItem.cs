@@ -90,4 +90,14 @@ public sealed class LinkItem
             return $"{len:0.##} {sizes[order]}";
         }
     }
+
+    /// <summary>
+    /// Date de modification formatée.
+    /// </summary>
+    public string FormattedLastWriteTime => LastWriteTime.ToString("dd/MM/yyyy HH:mm");
+
+    /// <summary>
+    /// Date de création formatée.
+    /// </summary>
+    public string FormattedCreationTime => CreationTime.ToString("dd/MM/yyyy HH:mm");
 }
