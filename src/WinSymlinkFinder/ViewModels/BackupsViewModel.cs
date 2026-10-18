@@ -123,4 +123,27 @@ public sealed partial class BackupsViewModel : ObservableObject
             IsStatusOpen = true;
         }
     }
+
+    public string BackupDirectory => _backupService.BackupDirectory;
+
+    [RelayCommand]
+    public void OpenBackupFolder()
+    {
+        try
+        {
+            if (Directory.Exists(BackupDirectory))
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = $"\"{BackupDirectory}\"",
+                    UseShellExecute = true
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLogService.Instance.LogError("Impossible d'ouvrir le dossier de sauvegarde", ex);
+        }
+    }
 }

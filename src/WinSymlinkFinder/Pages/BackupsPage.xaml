@@ -52,7 +52,14 @@
                         </StackPanel>
                     </Button>
 
-                    <Button Click="ExportCsv_Click" ToolTipService.ToolTip="Exporter l'historique en CSV">
+                    <Button Click="OpenBackupFolder_Click" ToolTipService.ToolTip="Ouvrir le dossier local (%LOCALAPPDATA%\WinSymlinkFinder\Backups) contenant les fichiers CSV et JSON de sauvegarde">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xED25;" FontSize="14" />
+                            <TextBlock Text="Ouvrir dossier local (CSV/JSON)" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Click="ExportCsv_Click" ToolTipService.ToolTip="Exporter l'historique vers un nouveau fichier CSV">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <FontIcon Glyph="&#xEDE1;" FontSize="14" />
                             <TextBlock Text="Exporter (CSV)..." />

@@ -28,6 +28,11 @@ public sealed partial class BackupsPage : Page
         await ViewModel.LoadBackupsAsync();
     }
 
+    private void OpenBackupFolder_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.OpenBackupFolder();
+    }
+
     private async void ExportCsv_Click(object sender, RoutedEventArgs e)
     {
         try

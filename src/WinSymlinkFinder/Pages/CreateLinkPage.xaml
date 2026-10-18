@@ -52,7 +52,7 @@
                             <TextBox
                                 x:Name="TargetPathTextBox"
                                 Grid.Column="0"
-                                PlaceholderText="ex: C:\Users\Arnaud\OneDrive\Backup\savedata ou D:\Donnees\Archives"
+                                PlaceholderText="ex: D:\Donnees\RepertoireCible ou C:\Utilisateurs\Public\Documents"
                                 Text="{x:Bind ViewModel.TargetPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                             <Button
                                 Grid.Column="1"
@@ -93,7 +93,7 @@
                             <TextBox
                                 x:Name="LinkPathTextBox"
                                 Grid.Column="0"
-                                PlaceholderText="ex: E:\Jeux\Uncharted\user\savedata ou C:\Projets\MonLien"
+                                PlaceholderText="ex: C:\MonProjet\DossierLien ou D:\Jeux\PartiesSauvegardees"
                                 Text="{x:Bind ViewModel.LinkPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                             <Button
                                 Grid.Column="1"

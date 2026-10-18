@@ -95,7 +95,7 @@ public class LinkManagementTests
         var linkService = new LinkManagementService(backupService);
 
         string linkPath = @"E:\Games\MyGame\user\savedata";
-        string targetPath = @"C:\Users\Arnaud\OneDrive\Backup\savedata";
+        string targetPath = @"C:\Users\JohnDoe\OneDrive\Backup\savedata";
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             linkService.CreateLinkAsync(linkPath, targetPath, LinkType.SymbolicLinkDirectory, isRelative: true));
