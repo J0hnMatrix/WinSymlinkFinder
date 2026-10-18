@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "WinSymlinkFinder (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "WinSymlinkFinder (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
