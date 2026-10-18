@@ -50,6 +50,14 @@ Application de bureau moderne développée en **C# / .NET 8** et **WinUI 3 (Wind
 dotnet build -c Release
 ```
 
+### Génération d'un exécutable unique autonome (Single-File) :
+Pour produire un binaire `.exe` autonome (contenant le runtime .NET 8, le Windows App SDK et WinUI 3, exécutable directement sans prérequis) :
+```powershell
+dotnet publish src/WinSymlinkFinder/WinSymlinkFinder.csproj -c Release -p:PublishProfile=win-x64-singlefile
+```
+L'exécutable autonome est généré dans :
+`src/WinSymlinkFinder/bin/publish/singlefile/WinSymlinkFinder.exe`
+
 ---
 
 ## 📜 Conventions de commit
