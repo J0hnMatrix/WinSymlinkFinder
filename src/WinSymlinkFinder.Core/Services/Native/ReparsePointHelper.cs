@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -29,7 +30,9 @@ public static class ReparsePointHelper
     public const uint IO_REPARSE_TAG_SYMLINK = 0xA000000C;
     public const uint IO_REPARSE_TAG_APPEXECLINK = 0x8000001B;
 
+    private const uint FSCTL_SET_REPARSE_POINT = 0x000900A4;
     private const uint FSCTL_GET_REPARSE_POINT = 0x000900A8;
+    private const uint GENERIC_WRITE = 0x40000000;
     private const uint FILE_SHARE_READ = 0x00000001;
     private const uint FILE_SHARE_WRITE = 0x00000002;
     private const uint FILE_SHARE_DELETE = 0x00000004;
@@ -53,12 +56,103 @@ public static class ReparsePointHelper
     private static extern bool DeviceIoControl(
         SafeFileHandle hDevice,
         uint dwIoControlCode,
-        IntPtr lpInBuffer,
+        byte[]? lpInBuffer,
         uint nInBufferSize,
-        byte[] lpOutBuffer,
+        byte[]? lpOutBuffer,
         uint nOutBufferSize,
         out uint lpBytesReturned,
         IntPtr lpOverlapped);
+
+    /// <summary>
+    /// Crée une jonction NTFS directement via Win32 (FSCTL_SET_REPARSE_POINT) sans lancer cmd.exe.
+    /// </summary>
+    public static void CreateJunction(string linkPath, string targetPath)
+    {
+        string fullTarget = Path.GetFullPath(targetPath);
+        if (!Directory.Exists(fullTarget))
+        {
+            throw new DirectoryNotFoundException($"Le dossier cible '{fullTarget}' est introuvable.");
+        }
+
+        // Normaliser : retirer le backslash final sauf pour la racine d'un lecteur (ex: C:\)
+        string root = Path.GetPathRoot(fullTarget) ?? string.Empty;
+        if (fullTarget.Length > root.Length && fullTarget.EndsWith(Path.DirectorySeparatorChar))
+        {
+            fullTarget = fullTarget.TrimEnd(Path.DirectorySeparatorChar);
+        }
+
+        Directory.CreateDirectory(linkPath);
+        bool succeeded = false;
+        try
+        {
+            using var handle = CreateFile(
+                linkPath,
+                GENERIC_WRITE,
+                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                IntPtr.Zero,
+                OPEN_EXISTING,
+                FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
+                IntPtr.Zero);
+
+            if (handle.IsInvalid)
+            {
+                int err = Marshal.GetLastWin32Error();
+                throw new IOException($"Impossible d'ouvrir le répertoire pour créer la jonction (code Win32 {err}).");
+            }
+
+            string substituteName = @"\??\" + fullTarget;
+            string printName = fullTarget;
+
+            int subByteLen = Encoding.Unicode.GetByteCount(substituteName);
+            int printByteLen = Encoding.Unicode.GetByteCount(printName);
+            int reparseDataLen = 8 + subByteLen + 2 + printByteLen + 2;
+            int totalBufferSize = 8 + reparseDataLen;
+
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(totalBufferSize);
+            try
+            {
+                Array.Clear(buffer, 0, totalBufferSize);
+
+                BitConverter.TryWriteBytes(buffer.AsSpan(0, 4), IO_REPARSE_TAG_MOUNT_POINT);
+                BitConverter.TryWriteBytes(buffer.AsSpan(4, 2), (ushort)reparseDataLen);
+                BitConverter.TryWriteBytes(buffer.AsSpan(8, 2), (ushort)0); // SubstituteNameOffset
+                BitConverter.TryWriteBytes(buffer.AsSpan(10, 2), (ushort)subByteLen);
+                BitConverter.TryWriteBytes(buffer.AsSpan(12, 2), (ushort)(subByteLen + 2)); // PrintNameOffset
+                BitConverter.TryWriteBytes(buffer.AsSpan(14, 2), (ushort)printByteLen);
+
+                Encoding.Unicode.GetBytes(substituteName, buffer.AsSpan(16, subByteLen));
+                Encoding.Unicode.GetBytes(printName, buffer.AsSpan(16 + subByteLen + 2, printByteLen));
+
+                if (!DeviceIoControl(handle, FSCTL_SET_REPARSE_POINT, buffer, (uint)totalBufferSize, null, 0, out _, IntPtr.Zero))
+                {
+                    int err = Marshal.GetLastWin32Error();
+                    throw new IOException($"Échec de FSCTL_SET_REPARSE_POINT pour la jonction (code Win32 {err}).");
+                }
+
+                succeeded = true;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
+        finally
+        {
+            if (!succeeded)
+            {
+                try
+                {
+                    if (Directory.Exists(linkPath))
+                    {
+                        Directory.Delete(linkPath, recursive: false);
+                    }
+                }
+                catch
+                {
+                }
+            }
+        }
+    }
 
     /// <summary>
     /// Inspecte un élément ayant l'attribut ReparsePoint et extrait ses informations précises.
@@ -78,55 +172,62 @@ public static class ReparsePointHelper
 
             if (handle.IsInvalid)
             {
-                // Fallback vers les API .NET 8 si CreateFile échoue
+                // Fallback vers les API .NET si CreateFile échoue
                 return FallbackViaDotNet(path, isDirectory);
             }
 
-            byte[] buffer = new byte[MAXIMUM_REPARSE_DATA_BUFFER_SIZE];
-            if (!DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, IntPtr.Zero, 0, buffer, (uint)buffer.Length, out uint bytesReturned, IntPtr.Zero))
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
+            try
             {
-                return FallbackViaDotNet(path, isDirectory);
-            }
-
-            if (bytesReturned < 8)
-            {
-                return FallbackViaDotNet(path, isDirectory);
-            }
-
-            uint reparseTag = BitConverter.ToUInt32(buffer, 0);
-
-            if (reparseTag == IO_REPARSE_TAG_SYMLINK)
-            {
-                return ParseSymbolicLink(path, isDirectory, buffer);
-            }
-            else if (reparseTag == IO_REPARSE_TAG_MOUNT_POINT)
-            {
-                return ParseMountPoint(path, buffer);
-            }
-            else if (reparseTag == IO_REPARSE_TAG_APPEXECLINK)
-            {
-                return new ReparseInfo
+                if (!DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, null, 0, buffer, MAXIMUM_REPARSE_DATA_BUFFER_SIZE, out uint bytesReturned, IntPtr.Zero))
                 {
-                    ReparseTag = reparseTag,
-                    LinkType = LinkType.AppExecLink,
-                    TargetPath = "Windows App Execution Alias",
-                    PrintName = "AppExecLink",
-                    IsRelative = false,
-                    IsTargetValid = true
-                };
-            }
-            else
-            {
-                // Autre reparse point (WOF, OneDrive Cloud Files, etc.)
-                return new ReparseInfo
+                    return FallbackViaDotNet(path, isDirectory);
+                }
+
+                if (bytesReturned < 8)
                 {
-                    ReparseTag = reparseTag,
-                    LinkType = LinkType.OtherReparsePoint,
-                    TargetPath = $"ReparseTag: 0x{reparseTag:X8}",
-                    PrintName = $"0x{reparseTag:X8}",
-                    IsRelative = false,
-                    IsTargetValid = true
-                };
+                    return FallbackViaDotNet(path, isDirectory);
+                }
+
+                uint reparseTag = BitConverter.ToUInt32(buffer, 0);
+
+                if (reparseTag == IO_REPARSE_TAG_SYMLINK)
+                {
+                    return ParseSymbolicLink(path, isDirectory, buffer);
+                }
+                else if (reparseTag == IO_REPARSE_TAG_MOUNT_POINT)
+                {
+                    return ParseMountPoint(path, buffer);
+                }
+                else if (reparseTag == IO_REPARSE_TAG_APPEXECLINK)
+                {
+                    return new ReparseInfo
+                    {
+                        ReparseTag = reparseTag,
+                        LinkType = LinkType.AppExecLink,
+                        TargetPath = "Windows App Execution Alias",
+                        PrintName = "AppExecLink",
+                        IsRelative = false,
+                        IsTargetValid = true
+                    };
+                }
+                else
+                {
+                    // Autre reparse point (WOF, OneDrive Cloud Files, etc.)
+                    return new ReparseInfo
+                    {
+                        ReparseTag = reparseTag,
+                        LinkType = LinkType.OtherReparsePoint,
+                        TargetPath = $"ReparseTag: 0x{reparseTag:X8}",
+                        PrintName = $"0x{reparseTag:X8}",
+                        IsRelative = false,
+                        IsTargetValid = true
+                    };
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
             }
         }
         catch

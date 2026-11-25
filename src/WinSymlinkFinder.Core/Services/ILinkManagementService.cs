@@ -1,9 +1,9 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using WinSymlinkFinder.Models;
+using WinSymlinkFinder.Services.Native;
 
 namespace WinSymlinkFinder.Services;
 
@@ -94,7 +94,7 @@ public sealed class LinkManagementService : ILinkManagementService
                         break;
 
                     case LinkType.Junction:
-                        CreateJunctionViaCmd(linkPath, Path.GetFullPath(targetPath));
+                        ReparsePointHelper.CreateJunction(linkPath, Path.GetFullPath(targetPath));
                         break;
 
                     case LinkType.HardLink:
@@ -187,29 +187,5 @@ public sealed class LinkManagementService : ILinkManagementService
         await _backupService.RemoveBackupAsync(backup.Id);
 
         AppLogService.Instance.LogInfo($"Lien restauré et retiré de la liste des sauvegardes : '{backup.OriginalPath}'");
-    }
-
-    private static void CreateJunctionViaCmd(string linkPath, string targetPath)
-    {
-        var psi = new ProcessStartInfo
-        {
-            FileName = "cmd.exe",
-            Arguments = $"/c mklink /J \"{linkPath}\" \"{targetPath}\"",
-            CreateNoWindow = true,
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-
-        using var proc = Process.Start(psi) ?? throw new InvalidOperationException("Impossible de lancer cmd.exe pour mklink.");
-        string stdout = proc.StandardOutput.ReadToEnd();
-        string stderr = proc.StandardError.ReadToEnd();
-        proc.WaitForExit();
-
-        if (proc.ExitCode != 0)
-        {
-            string errMessage = !string.IsNullOrWhiteSpace(stderr) ? stderr : stdout;
-            throw new IOException($"Erreur lors de la création de la jonction : {errMessage.Trim()}");
-        }
     }
 }

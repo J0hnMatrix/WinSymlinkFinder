@@ -14,6 +14,8 @@ namespace WinSymlinkFinder.Services;
 public sealed class NtfsLinkScanner : INtfsLinkScanner
 {
     private const int ProgressReportBatchSize = 100;
+    private const long ProgressReportIntervalMs = 100;
+    private static readonly string WindowsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
 
     public async IAsyncEnumerable<LinkItem> ScanDirectoryAsync(
         string rootPath,
@@ -28,6 +30,7 @@ public sealed class NtfsLinkScanner : INtfsLinkScanner
         long itemsScanned = 0;
         int linksFound = 0;
         int errorsEncountered = 0;
+        long lastProgressTick = Environment.TickCount64;
 
         // File d'attente pour parcours itératif (évite stack overflow)
         var pendingDirs = new Queue<string>();
@@ -46,19 +49,24 @@ public sealed class NtfsLinkScanner : INtfsLinkScanner
                 continue;
             }
 
-            // Notification d'avancement périodique
+            // Notification d'avancement périodique (batch + throttling temporel)
             itemsScanned++;
             if (itemsScanned % ProgressReportBatchSize == 0)
             {
-                progress?.Report(new ScanProgressReport
+                long now = Environment.TickCount64;
+                if (now - lastProgressTick >= ProgressReportIntervalMs)
                 {
-                    ItemsScanned = itemsScanned,
-                    LinksFound = linksFound,
-                    ErrorsEncountered = errorsEncountered,
-                    CurrentDirectory = currentDir
-                });
-                // Permet au thread UI et autres tâches de respirer
-                await Task.Yield();
+                    lastProgressTick = now;
+                    progress?.Report(new ScanProgressReport
+                    {
+                        ItemsScanned = itemsScanned,
+                        LinksFound = linksFound,
+                        ErrorsEncountered = errorsEncountered,
+                        CurrentDirectory = currentDir
+                    });
+                    // Permet au thread UI et autres tâches de respirer
+                    await Task.Yield();
+                }
             }
 
             DirectoryInfo dirInfo;
@@ -244,8 +252,7 @@ public sealed class NtfsLinkScanner : INtfsLinkScanner
                 return true;
             }
 
-            string windowsPath = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
-            if (!string.IsNullOrEmpty(windowsPath) && info.FullName.StartsWith(windowsPath, StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrEmpty(WindowsFolderPath) && info.FullName.StartsWith(WindowsFolderPath, StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }

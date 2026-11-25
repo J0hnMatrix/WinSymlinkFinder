@@ -4,7 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
+using WinSymlinkFinder.Core.Helpers;
 using WinSymlinkFinder.Models;
 
 namespace WinSymlinkFinder.Services;
@@ -27,7 +29,7 @@ public sealed class LinkBackupService : ILinkBackupService
     private readonly string _backupDir;
     private readonly string _backupJsonPath;
     private readonly string _backupCsvPath;
-    private readonly object _lock = new();
+    private readonly SemaphoreSlim _fileLock = new(1, 1);
 
     public string BackupDirectory => _backupDir;
     public string BackupCsvPath => _backupCsvPath;
@@ -61,17 +63,35 @@ public sealed class LinkBackupService : ILinkBackupService
             IsRelative = link.IsRelative
         };
 
-        var all = await GetBackupsAsync();
-        lock (_lock)
+        await _fileLock.WaitAsync();
+        try
         {
+            var all = await ReadBackupsInternalAsync();
             all.Insert(0, backup);
+            await SaveBackupsInternalAsync(all);
+        }
+        finally
+        {
+            _fileLock.Release();
         }
 
-        await SaveBackupsAsync(all);
         AppLogService.Instance.LogInfo($"Sauvegarde créée pour le lien supprimé : '{link.FullPath}' -> '{link.Target}'");
     }
 
     public async Task<List<DeletedLinkBackup>> GetBackupsAsync()
+    {
+        await _fileLock.WaitAsync();
+        try
+        {
+            return await ReadBackupsInternalAsync();
+        }
+        finally
+        {
+            _fileLock.Release();
+        }
+    }
+
+    private async Task<List<DeletedLinkBackup>> ReadBackupsInternalAsync()
     {
         if (!File.Exists(_backupJsonPath))
         {
@@ -93,20 +113,38 @@ public sealed class LinkBackupService : ILinkBackupService
 
     public async Task RemoveBackupAsync(Guid backupId)
     {
-        var all = await GetBackupsAsync();
-        all.RemoveAll(b => b.Id == backupId);
-        await SaveBackupsAsync(all);
+        await _fileLock.WaitAsync();
+        try
+        {
+            var all = await ReadBackupsInternalAsync();
+            all.RemoveAll(b => b.Id == backupId);
+            await SaveBackupsInternalAsync(all);
+        }
+        finally
+        {
+            _fileLock.Release();
+        }
     }
 
     public async Task ExportBackupsToCsvAsync(string filePath)
     {
-        var all = await GetBackupsAsync();
+        List<DeletedLinkBackup> all;
+        await _fileLock.WaitAsync();
+        try
+        {
+            all = await ReadBackupsInternalAsync();
+        }
+        finally
+        {
+            _fileLock.Release();
+        }
+
         string csvContent = GenerateCsvContent(all);
         await File.WriteAllTextAsync(filePath, csvContent, Encoding.UTF8);
         AppLogService.Instance.LogInfo($"Sauvegardes exportées en CSV : '{filePath}' ({all.Count} entrées)");
     }
 
-    private async Task SaveBackupsAsync(List<DeletedLinkBackup> backups)
+    private async Task SaveBackupsInternalAsync(List<DeletedLinkBackup> backups)
     {
         try
         {
@@ -134,25 +172,15 @@ public sealed class LinkBackupService : ILinkBackupService
             string line = string.Join(";",
                 b.Id,
                 b.DeletedAt.ToString("yyyy-MM-dd HH:mm:ss"),
-                EscapeCsv(b.Name),
-                EscapeCsv(b.TypeDisplayName),
-                EscapeCsv(b.OriginalPath),
-                EscapeCsv(b.Target),
+                CsvHelper.EscapeCsv(b.Name),
+                CsvHelper.EscapeCsv(b.TypeDisplayName),
+                CsvHelper.EscapeCsv(b.OriginalPath),
+                CsvHelper.EscapeCsv(b.Target),
                 b.IsRelative ? "Oui" : "Non"
             );
             sb.AppendLine(line);
         }
 
         return sb.ToString();
-    }
-
-    private static string EscapeCsv(string value)
-    {
-        if (string.IsNullOrEmpty(value)) return "\"\"";
-        if (value.Contains(';') || value.Contains('"') || value.Contains('\n') || value.Contains('\r'))
-        {
-            return $"\"{value.Replace("\"", "\"\"")}\"";
-        }
-        return $"\"{value}\"";
     }
 }

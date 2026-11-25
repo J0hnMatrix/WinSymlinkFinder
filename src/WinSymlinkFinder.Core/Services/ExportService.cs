@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using WinSymlinkFinder.Core.Helpers;
 using WinSymlinkFinder.Models;
 
 namespace WinSymlinkFinder.Services;
@@ -28,10 +29,10 @@ public sealed class ExportService : IExportService
         foreach (var item in items)
         {
             string line = string.Join(";",
-                EscapeCsv(item.Name),
-                EscapeCsv(item.TypeDisplayName),
-                EscapeCsv(item.FullPath),
-                EscapeCsv(item.Target),
+                CsvHelper.EscapeCsv(item.Name),
+                CsvHelper.EscapeCsv(item.TypeDisplayName),
+                CsvHelper.EscapeCsv(item.FullPath),
+                CsvHelper.EscapeCsv(item.Target),
                 item.IsTargetValid ? "Oui" : "Non",
                 item.IsRelative ? "Oui" : "Non",
                 item.CreationTime.ToString("yyyy-MM-dd HH:mm:ss"),
@@ -48,15 +49,5 @@ public sealed class ExportService : IExportService
     {
         using var fileStream = File.Create(filePath);
         await JsonSerializer.SerializeAsync(fileStream, items, AppExportJsonContext.Default.IEnumerableLinkItem);
-    }
-
-    private static string EscapeCsv(string value)
-    {
-        if (string.IsNullOrEmpty(value)) return "\"\"";
-        if (value.Contains(';') || value.Contains('"') || value.Contains('\n') || value.Contains('\r'))
-        {
-            return $"\"{value.Replace("\"", "\"\"")}\"";
-        }
-        return $"\"{value}\"";
     }
 }

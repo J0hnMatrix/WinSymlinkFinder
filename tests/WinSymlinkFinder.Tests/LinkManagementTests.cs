@@ -117,4 +117,33 @@ public class LinkManagementTests
 
         Assert.Contains("Le mode relatif n'est pas supporté", ex.Message);
     }
+
+    [Fact]
+    public async Task CreateLinkAsync_Junction_CreatesValidReparsePointWithoutCmd()
+    {
+        string tempRoot = Path.Combine(Path.GetTempPath(), $"WinSymlinkFinderTest_{Guid.NewGuid():N}");
+        string targetDir = Path.Combine(tempRoot, "TargetFolder");
+        string junctionDir = Path.Combine(tempRoot, "JunctionFolder");
+        Directory.CreateDirectory(targetDir);
+
+        try
+        {
+            var backupService = new LinkBackupService();
+            var linkService = new LinkManagementService(backupService);
+
+            await linkService.CreateLinkAsync(junctionDir, targetDir, LinkType.Junction, isRelative: false);
+
+            Assert.True(Directory.Exists(junctionDir));
+            var reparse = WinSymlinkFinder.Services.Native.ReparsePointHelper.GetReparseInfo(junctionDir, isDirectory: true);
+            Assert.NotNull(reparse);
+            Assert.Equal(LinkType.Junction, reparse!.LinkType);
+            Assert.Equal(targetDir, reparse.TargetPath, ignoreCase: true);
+            Assert.True(reparse.IsTargetValid);
+        }
+        finally
+        {
+            if (Directory.Exists(junctionDir)) Directory.Delete(junctionDir, recursive: false);
+            if (Directory.Exists(tempRoot)) Directory.Delete(tempRoot, recursive: true);
+        }
+    }
 }

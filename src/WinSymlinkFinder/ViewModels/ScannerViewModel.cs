@@ -123,7 +123,7 @@ public sealed partial class ScannerViewModel : ObservableObject
         _scanner = scanner;
         _exportService = exportService;
         _linkManager = linkManager ?? new LinkManagementService();
-        _dispatcherQueue = DispatcherQueue.GetForCurrentThread() ?? DispatcherQueue.GetForCurrentThread();
+        _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
         LoadAvailableDrives();
     }
@@ -188,18 +188,25 @@ public sealed partial class ScannerViewModel : ObservableObject
         _scanCts = new CancellationTokenSource();
         _stopwatch.Restart();
 
-        // Timer pour actualiser le temps écoulé
-        var timerTask = Task.Run(async () =>
+        // Timer pour actualiser le temps écoulé (annulé dès la fin du scan)
+        var scanToken = _scanCts.Token;
+        _ = Task.Run(async () =>
         {
-            while (IsScanning)
+            try
             {
-                await Task.Delay(500);
-                _dispatcherQueue.TryEnqueue(() =>
+                using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(500));
+                while (await timer.WaitForNextTickAsync(scanToken))
                 {
-                    ElapsedTimeText = _stopwatch.Elapsed.ToString(@"hh\:mm\:ss");
-                });
+                    _dispatcherQueue.TryEnqueue(() =>
+                    {
+                        ElapsedTimeText = _stopwatch.Elapsed.ToString(@"hh\:mm\:ss");
+                    });
+                }
             }
-        });
+            catch (OperationCanceledException)
+            {
+            }
+        }, scanToken);
 
         var progress = new Progress<ScanProgressReport>(report =>
         {
@@ -266,6 +273,7 @@ public sealed partial class ScannerViewModel : ObservableObject
             _stopwatch.Stop();
             IsScanning = false;
             ElapsedTimeText = _stopwatch.Elapsed.ToString(@"hh\:mm\:ss");
+            _scanCts.Cancel();
             _scanCts.Dispose();
             _scanCts = null;
         }
