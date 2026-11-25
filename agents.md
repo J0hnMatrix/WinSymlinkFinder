@@ -43,6 +43,7 @@ Développer une application de bureau Windows moderne (WinUI 3 / Windows App SDK
 
 ## 📝 Historique des modifications
 
+- **2026-11-25** : Désactivation de `PublishTrimmed` dans `win-x64-singlefile.pubxml` (compatibilité XAML/WinRT WinUI 3, binaire final **95,47 Mo**).
 - **2026-11-25** : Passage en version **1.4.0**.
 - **2026-11-25** : Définition de `MICROSOFT_WINDOWSAPPRUNTIME_BASE_DIRECTORY` via `[ModuleInitializer]` dans `App.xaml.cs` pour corriger le crash au démarrage en mode Single-File.
 - **2026-11-25** : Optimisation du scanner (`ArrayPool<byte>`, cache `WindowsFolderPath`, throttling 100 ms), création de jonctions NTFS directement via Win32 (`FSCTL_SET_REPARSE_POINT` sans `cmd.exe`), `SemaphoreSlim` dans `LinkBackupService`, `PeriodicTimer` dans `ScannerViewModel` et extraction de `CsvHelper`.

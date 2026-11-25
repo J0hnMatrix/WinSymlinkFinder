@@ -120,6 +120,7 @@ Le binaire autonome est produit dans :
 
 ## 📝 Historique des modifications
 
+- **2026-11-25** : Désactivation de `PublishTrimmed` dans `win-x64-singlefile.pubxml` pour préserver les métadonnées XAML/WinRT de WinUI 3 (taille finale validée : **95,47 Mo**, soit **-67 %** par rapport aux 292,35 Mo initiaux).
 - **2026-11-25** : Passage en version **1.4.0** (.NET 11, optimisation Single-File, jonctions Win32 natives, scanner & sauvegardes optimisés).
 - **2026-11-25** : Correction du crash au démarrage en mode Single-File (`Microsoft.UI.Xaml.dll` / `0xc000027b`) en définissant `MICROSOFT_WINDOWSAPPRUNTIME_BASE_DIRECTORY` dans un `[ModuleInitializer]` de `App.xaml.cs`.
 - **2026-11-25** : Optimisation du moteur de scan et des services : pooling mémoire (`ArrayPool<byte>`) dans `ReparsePointHelper`, création native des jonctions NTFS via Win32 `FSCTL_SET_REPARSE_POINT` (suppression de `cmd.exe`), mise en cache du chemin Windows et throttling temporel dans `NtfsLinkScanner`, synchronisation `SemaphoreSlim` dans `LinkBackupService`, `PeriodicTimer` dans `ScannerViewModel` et mutualisation de `CsvHelper`.
