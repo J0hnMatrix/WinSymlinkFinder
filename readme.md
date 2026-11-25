@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/J0hnMatrix/WinSymlinkFinder/releases/latest"><img src="https://img.shields.io/github/v/release/J0hnMatrix/WinSymlinkFinder?style=flat-square&color=0078D4" alt="Dernière version" /></a>
-  <img src="https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square&logo=dotnet" alt=".NET 8" />
+  <img src="https://img.shields.io/badge/.NET-11.0-512BD4?style=flat-square&logo=dotnet" alt=".NET 11" />
   <img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078D6?style=flat-square&logo=windows" alt="Plateforme" />
   <img src="https://img.shields.io/badge/UI-WinUI%203%20%2F%20Windows%20App%20SDK-0078D4?style=flat-square" alt="WinUI 3" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="Licence" /></a>
@@ -24,7 +24,7 @@ Téléchargez directement la dernière version autonome (exécutable unique `.ex
 
 👉 **[Télécharger WinSymlinkFinder sur GitHub Releases](https://github.com/J0hnMatrix/WinSymlinkFinder/releases/latest)**
 
-*L'exécutable intègre son propre runtime .NET 8 et Windows App SDK en un fichier unique prêt à l'emploi.*
+*L'exécutable intègre son propre runtime .NET 11 et Windows App SDK en un fichier unique prêt à l'emploi.*
 
 ---
 
@@ -94,7 +94,7 @@ Téléchargez directement la dernière version autonome (exécutable unique `.ex
 
 ### Prérequis
 - Windows 10 (1809+) ou Windows 11.
-- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0).
+- [.NET 11.0 SDK](https://dotnet.microsoft.com/download/dotnet/11.0).
 - Visual Studio 2022 ou les Build Tools avec les charges *Développement Desktop .NET* et le *Windows App SDK*.
 
 ### Compiler et exécuter les tests :
@@ -115,3 +115,9 @@ Le binaire autonome est produit dans :
 
 - Projet sous licence [MIT](LICENSE).
 - Commits atomiques respectant la convention [Conventional Commits](https://www.conventionalcommits.org/).
+
+---
+
+## 📝 Historique des modifications
+
+- **2026-11-25** : Migration vers .NET 11 (`net11.0` / `net11.0-windows10.0.26100.0`) et correction de l'ordre de validation dans `LinkManagementService.CreateLinkAsync` (évite de créer le dossier parent avant la validation du mode relatif/lecteur).

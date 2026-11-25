@@ -13,7 +13,7 @@ Développer une application de bureau Windows moderne (WinUI 3 / Windows App SDK
 ## 🏗️ Architecture et Choix Techniques
 
 1. **Framework d'interface** :
-   - WinUI 3 (Windows App SDK) sous .NET 8.
+   - WinUI 3 (Windows App SDK) sous .NET 11.
    - Respect strict des directives d'interface Windows (Fluent Design, navigation latérale `NavigationView`, animations subtiles, thème sombre/clair dynamique).
    - Séparation MVVM (Model - View - ViewModel) avec CommunityToolkit.Mvvm si nécessaire.
 
@@ -38,3 +38,9 @@ Développer une application de bureau Windows moderne (WinUI 3 / Windows App SDK
 - **Absence de registre Windows centralisé** : Windows n'indexe pas les liens symboliques dans le registre. Tout résultat provient d'un parcours direct du système de fichiers ou de l'analyse MFT.
 - **Droits d'accès** : Certains dossiers système (`System Volume Information`, etc.) déclenchent des `UnauthorizedAccessException`. Le scanner doit les ignorer proprement sans interrompre le processus.
 - **Boucles récursives** : Un lien symbolique ou une jonction pointant vers un dossier parent ou un ancêtre peut créer une boucle infinie. Le scanner doit maintenir un ensemble des chemins réels visités ou ne pas suivre les jonctions récursivement pour lister les liens.
+
+---
+
+## 📝 Historique des modifications
+
+- **2026-11-25** : Migration des projets vers .NET 11 (`net11.0` / `net11.0-windows10.0.26100.0`) et correction de l'ordre de validation dans `LinkManagementService.CreateLinkAsync`.

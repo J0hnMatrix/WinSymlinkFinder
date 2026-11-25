@@ -40,12 +40,6 @@ public sealed class LinkManagementService : ILinkManagementService
             throw new IOException($"Un fichier ou dossier existe déjà à l'emplacement '{linkPath}'.");
         }
 
-        string? parent = Path.GetDirectoryName(Path.GetFullPath(linkPath));
-        if (!string.IsNullOrEmpty(parent) && !Directory.Exists(parent))
-        {
-            Directory.CreateDirectory(parent);
-        }
-
         string finalTarget = targetPath;
         if (isRelative)
         {
@@ -75,6 +69,12 @@ public sealed class LinkManagementService : ILinkManagementService
         else
         {
             finalTarget = Path.GetFullPath(targetPath);
+        }
+
+        string? parent = Path.GetDirectoryName(Path.GetFullPath(linkPath));
+        if (!string.IsNullOrEmpty(parent) && !Directory.Exists(parent))
+        {
+            Directory.CreateDirectory(parent);
         }
 
         AppLogService.Instance.LogInfo($"Création d'un lien : type={type}, linkPath='{linkPath}', targetPath='{targetPath}', finalTarget='{finalTarget}', isRelative={isRelative}");
