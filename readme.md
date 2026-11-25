@@ -120,6 +120,7 @@ Le binaire autonome est produit dans :
 
 ## 📝 Historique des modifications
 
+- **2026-11-25** : Passage en version **1.4.0** (.NET 11, optimisation Single-File, jonctions Win32 natives, scanner & sauvegardes optimisés).
 - **2026-11-25** : Correction du crash au démarrage en mode Single-File (`Microsoft.UI.Xaml.dll` / `0xc000027b`) en définissant `MICROSOFT_WINDOWSAPPRUNTIME_BASE_DIRECTORY` dans un `[ModuleInitializer]` de `App.xaml.cs`.
 - **2026-11-25** : Optimisation du moteur de scan et des services : pooling mémoire (`ArrayPool<byte>`) dans `ReparsePointHelper`, création native des jonctions NTFS via Win32 `FSCTL_SET_REPARSE_POINT` (suppression de `cmd.exe`), mise en cache du chemin Windows et throttling temporel dans `NtfsLinkScanner`, synchronisation `SemaphoreSlim` dans `LinkBackupService`, `PeriodicTimer` dans `ScannerViewModel` et mutualisation de `CsvHelper`.
 - **2026-11-25** : Optimisation du profil `win-x64-singlefile` (compression single-file, `PublishTrimmed` partiel, désactivation de `PublishReadyToRun` et suppression des symboles de debug) réduisant l'exécutable autonome de **292,35 Mo à 59,58 Mo** (-80 %), ajout d'un profil `win-x64-framework-dependent`, et nettoyage de la capacité inutilisée `systemAIModels` dans `Package.appxmanifest`.
