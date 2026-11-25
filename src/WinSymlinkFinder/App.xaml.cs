@@ -1,3 +1,5 @@
+using System;
+using System.Runtime.CompilerServices;
 using Microsoft.UI.Xaml;
 
 namespace WinSymlinkFinder;
@@ -7,6 +9,11 @@ namespace WinSymlinkFinder;
 /// </summary>
 public partial class App : Application
 {
+    [ModuleInitializer]
+    internal static void InitializeWindowsAppRuntime()
+    {
+        Environment.SetEnvironmentVariable("MICROSOFT_WINDOWSAPPRUNTIME_BASE_DIRECTORY", AppContext.BaseDirectory);
+    }
     private Window? _window;
 
     public static Window? MainWindowInstance { get; private set; }
