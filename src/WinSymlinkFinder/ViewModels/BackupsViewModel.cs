@@ -18,19 +18,19 @@ public sealed partial class BackupsViewModel : ObservableObject
     public ObservableCollection<DeletedLinkBackup> Backups { get; } = [];
 
     [ObservableProperty]
-    private DeletedLinkBackup? _selectedBackup;
+    public partial DeletedLinkBackup? SelectedBackup { get; set; }
 
     [ObservableProperty]
-    private bool _isLoading;
+    public partial bool IsLoading { get; set; }
 
     [ObservableProperty]
-    private string? _statusMessage;
+    public partial string? StatusMessage { get; set; }
 
     [ObservableProperty]
-    private bool _isStatusOpen;
+    public partial bool IsStatusOpen { get; set; }
 
     [ObservableProperty]
-    private InfoBarSeverity _statusSeverity = InfoBarSeverity.Informational;
+    public partial InfoBarSeverity StatusSeverity { get; set; } = InfoBarSeverity.Informational;
 
     public Visibility EmptyStateVisibility => Backups.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 

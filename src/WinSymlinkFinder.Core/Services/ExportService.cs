@@ -46,14 +46,8 @@ public sealed class ExportService : IExportService
 
     public async Task ExportToJsonAsync(string filePath, IEnumerable<LinkItem> items)
     {
-        var options = new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        };
-
         using var fileStream = File.Create(filePath);
-        await JsonSerializer.SerializeAsync(fileStream, items, options);
+        await JsonSerializer.SerializeAsync(fileStream, items, AppExportJsonContext.Default.IEnumerableLinkItem);
     }
 
     private static string EscapeCsv(string value)

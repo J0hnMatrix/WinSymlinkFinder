@@ -28,53 +28,53 @@ public sealed partial class ScannerViewModel : ObservableObject
     private readonly List<LinkItem> _allLinks = [];
 
     [ObservableProperty]
-    private string _selectedPath = @"C:\";
+    public partial string SelectedPath { get; set; } = @"C:\";
 
     [ObservableProperty]
-    private ObservableCollection<string> _availableDrives = [];
+    public partial ObservableCollection<string> AvailableDrives { get; set; } = [];
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanStartScan))]
     [NotifyPropertyChangedFor(nameof(ScanningProgressBarVisibility))]
-    private bool _isScanning;
+    public partial bool IsScanning { get; set; }
 
     public bool CanStartScan => !IsScanning && !string.IsNullOrWhiteSpace(SelectedPath);
     public Visibility ScanningProgressBarVisibility => IsScanning ? Visibility.Visible : Visibility.Collapsed;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ScannedItemsCountText))]
-    private long _scannedItemsCount;
+    public partial long ScannedItemsCount { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(LinksFoundCountText))]
-    private int _linksFoundCount;
+    public partial int LinksFoundCount { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ErrorsCountText))]
-    private int _errorsCount;
+    public partial int ErrorsCount { get; set; }
 
     [ObservableProperty]
-    private string _currentDirectoryStatus = "Prêt à scanner.";
+    public partial string CurrentDirectoryStatus { get; set; } = "Prêt à scanner.";
 
     [ObservableProperty]
-    private string _elapsedTimeText = "00:00:00";
+    public partial string ElapsedTimeText { get; set; } = "00:00:00";
 
     // Cartes de statistiques
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SymlinkFilesCountText))]
-    private int _symlinkFilesCount;
+    public partial int SymlinkFilesCount { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SymlinkDirsCountText))]
-    private int _symlinkDirsCount;
+    public partial int SymlinkDirsCount { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(JunctionsCountText))]
-    private int _junctionsCount;
+    public partial int JunctionsCount { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(BrokenLinksCountText))]
-    private int _brokenLinksCount;
+    public partial int BrokenLinksCount { get; set; }
 
     public string ScannedItemsCountText => ScannedItemsCount.ToString("N0");
     public string LinksFoundCountText => LinksFoundCount.ToString("N0");
@@ -87,28 +87,28 @@ public sealed partial class ScannerViewModel : ObservableObject
 
     // Filtres
     [ObservableProperty]
-    private string _searchQuery = string.Empty;
+    public partial string SearchQuery { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private bool _filterFiles = true;
+    public partial bool FilterFiles { get; set; } = true;
 
     [ObservableProperty]
-    private bool _filterDirectories = true;
+    public partial bool FilterDirectories { get; set; } = true;
 
     [ObservableProperty]
-    private bool _filterJunctions = true;
+    public partial bool FilterJunctions { get; set; } = true;
 
     [ObservableProperty]
-    private bool _filterOnlyBroken = false;
+    public partial bool FilterOnlyBroken { get; set; }
 
     [ObservableProperty]
-    private LinkItem? _selectedItem;
+    public partial LinkItem? SelectedItem { get; set; }
 
     [ObservableProperty]
-    private string? _statusInfoBarMessage;
+    public partial string? StatusInfoBarMessage { get; set; }
 
     [ObservableProperty]
-    private bool _isStatusInfoBarOpen;
+    public partial bool IsStatusInfoBarOpen { get; set; }
 
     public ObservableCollection<LinkItem> FilteredLinks { get; } = [];
 

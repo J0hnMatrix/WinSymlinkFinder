@@ -120,4 +120,5 @@ Le binaire autonome est produit dans :
 
 ## 📝 Historique des modifications
 
+- **2026-11-25** : Migration des ViewModels vers des propriétés `partial` (`[ObservableProperty]`) et ajout d'un `JsonSerializerContext` (`AppExportJsonContext` / `AppBackupJsonContext`) pour la compatibilité Trimming / AOT WinRT.
 - **2026-11-25** : Migration vers .NET 11 (`net11.0` / `net11.0-windows10.0.26100.0`) et correction de l'ordre de validation dans `LinkManagementService.CreateLinkAsync` (évite de créer le dossier parent avant la validation du mode relatif/lecteur).

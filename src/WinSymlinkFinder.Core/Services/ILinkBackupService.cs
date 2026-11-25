@@ -81,7 +81,7 @@ public sealed class LinkBackupService : ILinkBackupService
         try
         {
             string json = await File.ReadAllTextAsync(_backupJsonPath, Encoding.UTF8);
-            var list = JsonSerializer.Deserialize<List<DeletedLinkBackup>>(json);
+            var list = JsonSerializer.Deserialize(json, AppBackupJsonContext.Default.ListDeletedLinkBackup);
             return list ?? [];
         }
         catch (Exception ex)
@@ -111,8 +111,7 @@ public sealed class LinkBackupService : ILinkBackupService
         try
         {
             // 1. Sauvegarde au format JSON structuré
-            var options = new JsonSerializerOptions { WriteIndented = true };
-            string json = JsonSerializer.Serialize(backups, options);
+            string json = JsonSerializer.Serialize(backups, AppBackupJsonContext.Default.ListDeletedLinkBackup);
             await File.WriteAllTextAsync(_backupJsonPath, json, Encoding.UTF8);
 
             // 2. Synchronisation automatique au format CSV dans le même dossier

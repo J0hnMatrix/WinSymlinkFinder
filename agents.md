@@ -43,4 +43,5 @@ Développer une application de bureau Windows moderne (WinUI 3 / Windows App SDK
 
 ## 📝 Historique des modifications
 
+- **2026-11-25** : Conversion des `[ObservableProperty]` en propriétés `partial` (suppression des avertissements `MVVMTK0045`) et sérialisation JSON par génération de code source (`AppJsonContext`) compatible Trimming / AOT.
 - **2026-11-25** : Migration des projets vers .NET 11 (`net11.0` / `net11.0-windows10.0.26100.0`) et correction de l'ordre de validation dans `LinkManagementService.CreateLinkAsync`.

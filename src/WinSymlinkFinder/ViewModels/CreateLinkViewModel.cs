@@ -16,38 +16,38 @@ public sealed partial class CreateLinkViewModel : ObservableObject
     private readonly ILinkManagementService _linkService;
 
     [ObservableProperty]
-    private string _linkPath = string.Empty;
+    public partial string LinkPath { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _targetPath = string.Empty;
+    public partial string TargetPath { get; set; } = string.Empty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanBeRelative))]
     [NotifyPropertyChangedFor(nameof(RelativeOptionHelpText))]
-    private LinkType _selectedLinkType = LinkType.Junction;
+    public partial LinkType SelectedLinkType { get; set; } = LinkType.Junction;
 
     [ObservableProperty]
-    private bool _isRelative;
+    public partial bool IsRelative { get; set; }
 
     [ObservableProperty]
-    private bool _isCreating;
+    public partial bool IsCreating { get; set; }
 
     [ObservableProperty]
-    private string? _statusMessage;
+    public partial string? StatusMessage { get; set; }
 
     [ObservableProperty]
-    private bool _isStatusOpen;
+    public partial bool IsStatusOpen { get; set; }
 
     [ObservableProperty]
-    private InfoBarSeverity _statusSeverity = InfoBarSeverity.Informational;
+    public partial InfoBarSeverity StatusSeverity { get; set; } = InfoBarSeverity.Informational;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowSwitchToJunctionButtonVisibility))]
-    private bool _showSwitchToJunctionButton;
+    public partial bool ShowSwitchToJunctionButton { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowOpenDevSettingsButtonVisibility))]
-    private bool _showOpenDevSettingsButton;
+    public partial bool ShowOpenDevSettingsButton { get; set; }
 
     public Visibility ShowSwitchToJunctionButtonVisibility => ShowSwitchToJunctionButton ? Visibility.Visible : Visibility.Collapsed;
     public Visibility ShowOpenDevSettingsButtonVisibility => ShowOpenDevSettingsButton ? Visibility.Visible : Visibility.Collapsed;
